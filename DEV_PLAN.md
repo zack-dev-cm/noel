@@ -102,16 +102,24 @@ Tests:
 Acceptance:
 - Paid interventions unlock immediately.
 
-### M6: Observability and Ops
+### M6: CI/CD, Deploy, and Runbooks
 Deliverables:
-- Tracing, structured logs, and metrics dashboard.
+- Deploy script (infra/gcp/deploy.sh) and Cloud Build config.
+- GitHub Actions workflow (test -> build -> deploy).
+- Runbooks: docs/runbooks/deploy.md and docs/runbooks/ops.md.
+- Structured logging + alert policy (5xx) and common log queries.
+- Secret Manager integration for all API keys and tokens.
 
 Tasks:
-- OpenAI tracing and custom spans.
-- Log redaction and secrets handling.
+- Add deploy script that sets concurrency, min/max instances, VPC connector, and resolves WEB_APP_URL if unset.
+- Add runbooks with deploy, rollback, and log inspection steps.
+- Add CI workflow to run lint/tests and Playwright before deploy.
+- Containerize services and add optional vulnerability scanning (e.g., Trivy).
+- Enable structured logging and tracing with redaction controls.
 
 Acceptance:
-- End-to-end traces visible in dev.
+- Deploy runbook works end-to-end with a dry-run or staging service.
+- Logs and traces are visible with consistent event names.
 
 ### M7: QA and Release
 Deliverables:
@@ -127,27 +135,83 @@ Tasks:
 Acceptance:
 - All E2E tests pass and screenshots are approved.
 
+### M8: Subject Breath Telemetry
+Deliverables:
+- Synthetic Subject breath metrics attached to telemetry events.
+- Optional self-report (strict JSON schema) behind a config flag.
+- WebApp breath widget with cadence/variability display and synthetic label.
+- Storage schema updates for breath metrics.
+
+Tasks:
+- Extend shared telemetry types and worker computation for breath metrics.
+- Add migrations and persistence for breath fields in telemetry events.
+- Update WebApp to render breath widget and labels.
+- Add unit/integration tests and E2E coverage for breath telemetry.
+
+Acceptance:
+- Breath telemetry appears for Subject turns with source tags and synthetic labeling.
+- No chain-of-thought or free-text self-report is stored or streamed.
+
+### M9: UX Refresh + Output Controls
+Deliverables:
+- Updated UI/UX aligned to mocks with clearer process mapping and analysis view.
+- Admin page for token saver mode.
+- Response length caps and prompt guidance to keep outputs concise.
+
+Tasks:
+- Redesign dashboard, logs, and stars layout to match the mock visual language.
+- Add exchange diagram and animated process map for readability.
+- Implement admin-only settings endpoint + UI toggle for token saver mode.
+- Enforce response caps via max output tokens/chars and concise prompts.
+
+Tests:
+- Update Playwright coverage for new UI labels and admin page access.
+- Validate response truncation in worker unit/integration tests.
+
+Acceptance:
+- UI matches mock-inspired layout with readable process flow and animations.
+- Admin toggle persists and affects session budgets.
+- Model outputs stay within configured caps.
+
+### M9: Admin Model Version Display
+Deliverables:
+- Admin UI displays configured Researcher and Subject model versions.
+- Admin settings API includes model version payload.
+
+Tasks:
+- Extend admin settings endpoint to return model version configuration.
+- Update AdminPanel UI to render model versions (and optional fallback).
+
+Tests:
+- Playwright E2E suite (headed) with visual inspection.
+
+Acceptance:
+- Admin tab shows model versions that match server configuration.
+
 ## Tooling and Stack
 - Frontend: React 19 + Tailwind CSS (TMA).
 - Backend: Node.js/Express or Go.
 - Realtime: WebSocket (WSS).
 - Storage: Postgres + Redis.
 - Observability: OpenAI Traces + structured logs.
+- CI/CD: GitHub Actions + Cloud Build (or equivalent).
+- Hosting: Cloud Run (or equivalent).
+- Artifacts: GCS/S3 for images and logs (if needed).
 
 ## Release Workflow (Strict)
 1. Run Playwright e2e tests and inspect screenshots visually.
 2. Debug any failures.
-3. Deploy to staging.
+3. Deploy to staging (per docs/runbooks/deploy.md).
 4. Re-run Playwright e2e and inspect screenshots.
-5. Debug and redeploy until stable.
-6. Promote to production and repeat Playwright e2e.
+5. Inspect Cloud Logging and traces (per docs/runbooks/ops.md).
+6. Debug and redeploy until stable.
+7. Promote to production and repeat Playwright e2e.
 
 ## Risks and Mitigations
 - High inference costs: enforce budgets, caching, and usage limits.
 - Ethical risk: consent prompt and kill switch.
 - WebSocket disconnects: replay with sequence IDs.
+- Anthropomorphism risk: label breath telemetry as synthetic; allow opt-out and disable self-report.
 
 ## Open Questions
-- Final backend language choice (Node vs Go).
-- Target hosting provider and deployment pipeline.
-- Final model IDs and quotas.
+None.

@@ -1,0 +1,24 @@
+{
+  "name": "noetic-mirror",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm:dev:web\" \"npm:dev:server\" \"npm:dev:worker\"",
+    "dev:web": "npm --workspace apps/web run dev",
+    "dev:server": "npm --workspace apps/server run dev",
+    "dev:worker": "npm --workspace apps/worker run dev",
+    "build": "npm --workspace packages/shared run build && npm --workspace apps/web run build && npm --workspace apps/server run build && npm --workspace apps/worker run build",
+    "lint": "npm --workspace apps/web run lint && npm --workspace apps/server run lint && npm --workspace apps/worker run lint",
+    "test": "npm --workspace apps/server run test && npm --workspace apps/worker run test",
+    "e2e": "npx playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "concurrently": "^8.2.2",
+    "typescript": "^5.5.4",
+    "tsx": "^4.16.2"
+  }
+}

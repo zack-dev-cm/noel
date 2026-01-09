@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Build
+        run: npm run build
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+      - name: Start services
+        run: |
+          npm run dev:web &
+          npm run dev:server &
+          sleep 6
+      - name: Run E2E
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:5173
+        run: npm run e2e
+
+  deploy-staging:
+    if: github.ref == 'refs/heads/main'
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy (manual trigger recommended)
+        run: echo "Use infra/gcp/deploy.sh for staging deploy"

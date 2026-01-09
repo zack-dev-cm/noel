@@ -1,15 +1,20 @@
 # Status
 
 ## Stages
-- Analysis (PRD): complete
-- Architecture: pending
-- Planning (DEV_PLAN): complete
-- Development: pending
+- UX refresh + output controls:
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: in progress
 
 ## Current Tasks
-- Create core docs (PRD.md, DEV_PLAN.md, AGENTS.md): complete
-- Initialize git and create private repo: complete
-- Push initial commit: complete
+- Log review + improvement notes: complete
+- UI/UX redesign + animations: in progress
+- Output caps + concise prompts: in progress
+- Admin token saver controls: complete
+- Admin model versions display: complete
+- Deploy + Playwright local/prod: pending
 
 ## Notes
+- Research loop is disabled via SERVICE_ROLE=web until re-enabled.
 - Open questions tracked in open_questions.md.
