@@ -4,7 +4,11 @@ import { installTelegramStub } from './telegram';
 test('allows switching language and theme', async ({ page }) => {
   await installTelegramStub(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'About', exact: true }).click();
+  const consentButton = page.getByRole('button', { name: /I Consent|Согласен/ });
+  if (await consentButton.isVisible({ timeout: 1000 })) {
+    await consentButton.click();
+  }
+  await page.getByRole('button', { name: /About|О проекте/ }).click();
   const russianSettingsVisible = await page.getByText('Настройки', { exact: true }).isVisible();
   if (russianSettingsVisible) {
     await page.getByRole('button', { name: 'English', exact: true }).click();

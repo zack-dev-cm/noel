@@ -1,7 +1,7 @@
 # Architecture - Project Noetic Mirror
 
 ## 1. Task Description
-This document implements the architecture for `TZ.md` (Project Noetic Mirror). The system is a Telegram Mini App (TMA) that streams a live Researcher (OpenAI) ↔ Subject (Gemini) loop, with Stars payments, safety controls, session persistence, and GCP deployment, plus a mobile-native UI with bottom navigation, explicit turn pairing, EN/RU + theme toggles, and enhanced logging to debug empty Subject replies.
+This document implements the architecture for `TZ.md` (Project Noetic Mirror). The system is a Telegram Mini App (TMA) that streams a live Researcher (OpenAI) ↔ Subject (Gemini) loop, with Stars payments, safety controls, session persistence, and GCP deployment, plus a mobile-native UI with bottom navigation, explicit turn pairing, EN/RU + theme toggles, mid-length Subject replies (2–6 sentences), full reply visibility, short model tags, telemetry completeness, and enhanced logging to debug empty Subject replies.
 
 ## 2. Functional Architecture
 
@@ -14,9 +14,21 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
     - Inputs: stream events (WS)
     - Outputs: UI updates
     - UC: UC-02, UC-07, UC-12
+  - Show short model tags on turn cards (e.g., "GPT-5.2", "Gemini 3") while keeping labels as Researcher/Subject.
+    - Inputs: session model metadata or per-event model tags
+    - Outputs: turn header tags
+    - UC: UC-12
+  - Provide tap-to-expand cards in Logs for full-text readability with simple navigation.
+    - Inputs: transcript payloads, card state
+    - Outputs: expanded/collapsed log UI
+    - UC: UC-07
   - Provide bottom navigation between Live, Logs, Stars, About (and Admin for operators).
     - Inputs: user role, tab state
     - Outputs: navigational UI state
+    - UC: UC-12
+  - Render About modal content for Ethics and Community with detailed guidance and the main Telegram channel link (EN/RU).
+    - Inputs: localized copy
+    - Outputs: modal body content
     - UC: UC-12
   - Apply paper-material design system (custom font pairing, textured backgrounds, warm palette).
     - Inputs: global CSS tokens
@@ -73,6 +85,18 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
     - Inputs: session context, interventions
     - Outputs: stream events, transcript records
     - UC: UC-02, UC-04
+  - Enforce response length targets (Researcher 1–2 sentences, Subject 2–6 sentences) via prompt guidance and model output caps without post-generation truncation.
+    - Inputs: language mode, token budgets
+    - Outputs: bounded reply text and length diagnostics
+    - UC: UC-02
+  - Retry the Subject response on the same Gemini model when empty/blocked, with logged retry attempts.
+    - Inputs: Subject output, retry policy
+    - Outputs: non-empty Subject reply or final failure event
+    - UC: UC-02
+  - Apply prompt templates that enforce Socratic, high-information-gain questions and mechanistic Subject responses without chain-of-thought exposure.
+    - Inputs: prompt templates, session language
+    - Outputs: localized prompt payloads
+    - UC: UC-02, UC-06
   - Resolve session language mode and adapt Researcher/Subject prompts accordingly.
     - Inputs: session language setting
     - Outputs: localized prompts
@@ -89,6 +113,10 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
   - Publish events with sequence IDs.
     - Inputs: loop events
     - Outputs: WS broadcast, Redis stream
+    - UC: UC-02
+  - Preserve telemetry and model metadata on publish (no stripping when content exists).
+    - Inputs: stream events with telemetry/model tags
+    - Outputs: fully populated WS payloads
     - UC: UC-02
   - Replay events on reconnect using last_seq.
     - Inputs: last_seq
@@ -116,8 +144,16 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
     - Inputs: Telegram updates
     - Outputs: bot messages
     - UC: UC-05
+  - Post a pinned WebApp launch message to the public channel via admin command (/post_tma).
+    - Inputs: Telegram updates, `WEB_APP_TMA_URL` (fallback `WEB_APP_URL`)
+    - Outputs: channel message with inline URL button (Telegram channels do not accept `web_app`)
+    - UC: UC-05
   - Post milestones to `@noel_mirror` when enabled.
     - Inputs: session/payment events
+    - Outputs: channel messages
+    - UC: UC-05
+  - Mirror Researcher/Subject stream events to `@noel_mirror` when enabled (public session by default), with role labels and Telegram-safe chunking.
+    - Inputs: stream publish events
     - Outputs: channel messages
     - UC: UC-05
 - Dependencies: Telegram Bot API, Payments, Sessions.
@@ -152,11 +188,15 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
 **Component: Telemetry & Metrics**
 - Purpose: Compute and persist telemetry for UI and ops.
 - Functions:
-  - Compute uncertainty, self-reference, latency, token usage.
+  - Compute uncertainty, self-reference, latency, token usage for every Researcher and Subject turn.
   - Derive Subject breath metrics (bpm, variability, coherence, phase, source).
   - Inputs: model responses, timestamps
   - Outputs: telemetry records
   - UC: UC-02, UC-06
+  - Ensure the latest telemetry snapshot is available to the WebApp and logs (no missing values when telemetry exists).
+    - Inputs: telemetry events
+    - Outputs: UI-facing snapshots
+    - UC: UC-02
   - Aggregate metrics for ops dashboards.
     - Inputs: telemetry events
     - Outputs: aggregates
@@ -190,7 +230,8 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
   - Emit JSON logs with session_id/user_id/event.
   - Track usage and budgets per session.
   - Provide log filters for auth failures, WS drops, model errors.
-  - Log subject response pipeline (prompt size, candidate counts, empty output detection).
+  - Log subject response pipeline (prompt size, candidate counts, empty output detection, retry attempts).
+  - Log Researcher/Subject output length and over-cap flags for truncation debugging.
 - Dependencies: Cloud Logging, OpenAI Tracing.
 
 ### 2.2 Functional Component Diagram
@@ -547,6 +588,27 @@ sessions ||--o{ safety_events
 - POST `/api/sessions/private/start`
 - GET `/api/sessions/{id}`
 
+**API: Session Transcript**
+- GET `/api/sessions/{id}/transcript?cursor=...&limit=...`
+- Purpose: paged transcript retrieval for Logs with expand/collapse UI.
+- Response:
+```json
+{
+  "ok": true,
+  "items": [
+    {
+      "seq": 42,
+      "role": "subject",
+      "content": "...",
+      "ts": "...",
+      "model": "gemini-3-pro-preview",
+      "model_tag": "Gemini 3"
+    }
+  ],
+  "next_cursor": "..."
+}
+```
+
 **API: Stream (WebSocket)**
 - WS `/ws/stream?session_id=...&last_seq=...`
 - Events:
@@ -556,6 +618,8 @@ sessions ||--o{ safety_events
   "role": "subject",
   "content": "...",
   "ts": "...",
+  "model": "gemini-3-pro-preview",
+  "model_tag": "Gemini 3",
   "telemetry": {
     "distress_score": 0.12,
     "self_ref_rate": 0.08,
@@ -584,7 +648,7 @@ sessions ||--o{ safety_events
 
 **Telegram Webhook**
 - POST `/telegram/webhook/{secret}`
-- Handles `pre_checkout_query` and `successful_payment`.
+- Handles bot commands, `pre_checkout_query`, and `successful_payment` (including `/post_tma` for channel pin posts).
 
 ### 5.2 Internal Interfaces
 
@@ -599,7 +663,14 @@ sessions ||--o{ safety_events
 - Protocol: Redis stream `session:{id}:events`
 - Message:
 ```json
-{ "seq": 42, "role": "subject", "content": "...", "telemetry": { "breath": { "bpm": 13.8 } } }
+{
+  "seq": 42,
+  "role": "subject",
+  "content": "...",
+  "model": "gemini-3-pro-preview",
+  "model_tag": "Gemini 3",
+  "telemetry": { "breath": { "bpm": 13.8 } }
+}
 ```
 
 ### 5.3 External Integrations

@@ -8,6 +8,7 @@ import interventionsRouter from './routes/interventions.js';
 import paymentsRouter from './routes/payments.js';
 import sessionSettingsRouter from './routes/sessionSettings.js';
 import streamRouter from './routes/stream.js';
+import transcriptRouter from './routes/transcript.js';
 import telegramWebhookRouter from './routes/telegramWebhook.js';
 import userPreferencesRouter from './routes/userPreferences.js';
 import { createRepositories } from './storage/db.js';
@@ -47,6 +48,7 @@ export function createApp() {
   app.use(userPreferencesRouter);
   app.use(sessionSettingsRouter);
   app.use(streamRouter);
+  app.use(transcriptRouter);
   app.use(telegramWebhookRouter);
 
   app.get('*', (_req, res) => {

@@ -22,15 +22,40 @@
   - Planning: complete
   - Development: complete
 - Contrast + telemetry + admin access + budget caps:
-  - Analysis (PRD/TZ): in progress
-  - Architecture: pending
-  - Planning: pending
-  - Development: pending
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
 - Admin controls + channel streaming:
-  - Analysis (PRD/TZ): in progress
-  - Architecture: pending
-  - Planning: pending
-  - Development: pending
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
+- Reply completeness + Gemini reliability + metrics + model tags:
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
+- Prompt efficiency alignment (proposal-based):
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
+- Channel pin message (TMA link):
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
+- Channel pin fix (URL button):
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
+- Ethics + community copy refresh:
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
 
 ## Current Tasks
 - Update PRD/TZ/Architecture/Plan for mobile UX: complete
@@ -46,12 +71,36 @@
 - Update PRD/TZ/Architecture/Plan for stream/prompt/UI refinement: complete
 - Implement worker deploy + prompt + UI polish changes: complete
 - Deploy + E2E debug loop for live Subject replies: complete
-- Update PRD/TZ/Architecture/Plan for contrast/telemetry/admin/budget caps: in progress
-- Implement dark-mode contrast + telemetry + admin access + budget caps: pending
-- Deploy + E2E debug loop for contrast/metrics/admin: pending
-- Update PRD/TZ for admin controls + channel streaming: in progress
-- Define architecture for admin controls, channel streaming, and usage metrics: pending
-- Plan + implement admin UI/controls + usage tracking: pending
+- Update PRD/TZ/Architecture/Plan for contrast/telemetry/admin/budget caps: complete
+- Implement dark-mode contrast + telemetry + admin access + budget caps: complete
+- Deploy + E2E debug loop for contrast/metrics/admin: complete
+- Update PRD/TZ for admin controls + channel streaming: complete
+- Define architecture for admin controls, channel streaming, and usage metrics: complete (channel streaming scope)
+- Plan channel stream mirroring + runbook updates: complete
+- Implement channel stream mirroring + logging + deploy/test: complete
+- Update PRD/TZ for reply completeness, Gemini reliability, metrics, and model tags: complete
+- Define architecture for reply pipeline, UI text flow, and telemetry fixes: complete
+- Plan reply/UI/metrics fixes: complete
+- Implement reply/UI/metrics fixes: complete
+- Task 16.1 (worker retries/length/model tags): complete
+- Task 16.2 (transcript API + stream persistence): complete
+- Task 16.3 (UI full text + expand + model tags): complete
+- Task 16.4 (Playwright + deploy/debug loop): complete
+- Gemini subject response debug logging: complete
+- Deploy + E2E debug loop for reply completeness: complete
+- Update PRD/TZ/Architecture/Plan for prompt efficiency alignment: complete
+- Update Researcher/Subject system prompts for high-signal research: complete
+- Update + refactor TMA whitepaper copy (EN/RU): complete
+- Increase Subject token caps + disable Gemini function calls + initData fallback: complete
+- Deploy + E2E debug loop for token caps + Gemini config: complete
+- Update PRD/TZ/Architecture/Plan for channel pin message: complete
+- Implement bot command to post pinned WebApp link: complete
+- Run Playwright E2E + deploy/debug loop for channel pin message: complete
+- Update docs/config for channel URL button: complete
+- Implement URL-button fix + error handling for `/post_tma`: complete
+- Deploy updated services for channel URL button: complete
+- Update PRD/TZ/Architecture/Plan for ethics + community copy refresh: complete
+- Update Ethics/Community copy + main channel link: complete
 
 ## Notes
 - Worker runs as a separate Cloud Run service (`noetic-mirror-worker`).

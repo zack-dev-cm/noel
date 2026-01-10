@@ -17,6 +17,12 @@ PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
 - Telemetry + ops logs: 14 days.
 - Logs use hashed user IDs; initData is never stored.
 
+## Bot Operations
+- Post a pinned WebApp link to the public channel (admin only): send `/post_tma` to the bot.
+- Expect a channel message with an Open WebApp button that can be pinned.
+- Requires `WEB_APP_TMA_URL` (or `WEB_APP_URL` fallback), `PUBLIC_CHANNEL_ID`, and bot admin rights in the channel.
+- Telegram channels require URL buttons (not `web_app`), so use a t.me deeplink if available.
+
 ## Safety Thresholds
 - Kill switch: distress score >= 0.95.
 - Pause: distress score >= 0.85 or >= 0.60 for 3 consecutive turns.
@@ -48,8 +54,18 @@ gcloud alpha monitoring policies create \
   `resource.type=cloud_run_revision AND jsonPayload.event="subject_response"`
 - Subject pipeline responses (worker service only):
   `resource.type=cloud_run_revision AND resource.labels.service_name="noetic-mirror-worker" AND jsonPayload.event="subject_response"`
+- Researcher responses:
+  `resource.type=cloud_run_revision AND jsonPayload.event="researcher_response"`
+- Researcher responses (worker service only):
+  `resource.type=cloud_run_revision AND resource.labels.service_name="noetic-mirror-worker" AND jsonPayload.event="researcher_response"`
+- Output length over char cap (Subject):
+  `resource.type=cloud_run_revision AND jsonPayload.event="subject_response" AND jsonPayload.over_char_cap=true`
+- Output length over char cap (Researcher):
+  `resource.type=cloud_run_revision AND jsonPayload.event="researcher_response" AND jsonPayload.over_char_cap=true`
 - Subject empty responses:
   `resource.type=cloud_run_revision AND jsonPayload.event="subject_empty_response"`
+- Subject response debug (empty/blocked):
+  `resource.type=cloud_run_revision AND jsonPayload.event="subject_response_debug"`
 - Stream empty content:
   `resource.type=cloud_run_revision AND jsonPayload.event="stream_empty_content"`
 - Session budget exceeded:
@@ -58,6 +74,10 @@ gcloud alpha monitoring policies create \
   `resource.type=cloud_run_revision AND jsonPayload.event="stream_publish_failed"`
 - Stream publish errors:
   `resource.type=cloud_run_revision AND jsonPayload.event="stream_publish_error"`
+- Channel stream failures:
+  `resource.type=cloud_run_revision AND jsonPayload.event="channel_stream_failed"`
+- Telegram send failures:
+  `resource.type=cloud_run_revision AND jsonPayload.event="telegram_send_failed"`
 - Preferences updates:
   `resource.type=cloud_run_revision AND jsonPayload.event="preferences_updated"`
 - Session language updates:

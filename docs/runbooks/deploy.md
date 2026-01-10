@@ -28,11 +28,13 @@
 - ENV (default: prod)
 - INIT_DATA_MAX_AGE_SECONDS (default: 86400)
 - WEB_APP_URL (Mini App base URL for deep links)
+- WEB_APP_TMA_URL (optional; t.me deeplink for channel buttons, e.g. `https://t.me/noetic_mirror_bot/app`)
 - LOG_LEVEL (info|debug)
 - SERVICE_ROLE (web|worker|all; default: web)
 - WORKER_HTTP_ENABLED (default: true for worker)
 - SESSION_ID (default: public for worker)
 - ADMIN_TELEGRAM_IDS (comma-separated Telegram user IDs or usernames allowed for admin access)
+  - Example: `ADMIN_TELEGRAM_IDS=rheuiii,123456`
 - OPENAI_RESEARCHER_MODEL (default: gpt-5.2-2025-12-11)
 - GEMINI_MODEL (default: gemini-3-pro-preview)
 - GEMINI_FALLBACK_MODEL (default: gemini-flash-latest)
@@ -59,6 +61,8 @@
 - STREAM_PUBLISH_TOKEN (worker -> web internal auth)
 - PUBLIC_CHANNEL_ID (default: @noel_mirror)
 - ENABLE_PUBLIC_CHANNEL_POSTS (true|false)
+- ENABLE_PUBLIC_CHANNEL_STREAM (optional; defaults to ENABLE_PUBLIC_CHANNEL_POSTS)
+- PUBLIC_CHANNEL_STREAM_PRIVATE (true|false; default: false)
 - STARS_STARGAZER (default: 10)
 - STARS_COSMIC_PATRON (default: 100)
 - STARS_UNIVERSAL_ARCHITECT (default: 1000)
@@ -100,7 +104,7 @@ PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
 
 # Deploy Cloud Run (worker service)
 PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
-  gcloud run deploy "$WORKER_SERVICE" \
+gcloud run deploy "$WORKER_SERVICE" \
   --project "$PROJECT_ID" --region "$REGION" \
   --image "$IMAGE" \
   --platform managed --allow-unauthenticated \
@@ -111,6 +115,20 @@ PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
   --set-env-vars ENV=prod,SERVICE_ROLE=worker,WORKER_HTTP_ENABLED=true,SESSION_ID=public,INIT_DATA_MAX_AGE_SECONDS=86400,WEB_APP_URL=<WEB_APP_URL>,WEBHOOK_BASE_URL=<WEB_APP_URL>,STREAM_PUBLISH_URL=<WEB_APP_URL>,INTERVENTION_API_BASE=<WEB_APP_URL>,SETTINGS_API_BASE=<WEB_APP_URL> \
   --cpu 2 --memory 2Gi --concurrency 1 --min-instances 1 --max-instances 1 --no-cpu-throttling
 ```
+
+## Deploy Debug Loop (Required)
+1. Run local E2E headed and inspect screenshots:
+   - `npm run e2e`
+2. Deploy to production (script or manual).
+3. Run headed Playwright against prod and inspect screenshots/traces:
+   - `PLAYWRIGHT_BASE_URL=https://<SERVICE_URL> npx playwright test --headed`
+4. If any failure or visual regression:
+   - Debug locally, redeploy, re-run Playwright, and repeat until clean.
+
+## Debugging Notes (Cheap Models)
+- For debugging, override `OPENAI_RESEARCHER_MODEL` and `GEMINI_MODEL` with faster, lower-cost models.
+  - Example: `OPENAI_RESEARCHER_MODEL=gpt-4o-mini`
+  - Example: `GEMINI_MODEL=gemini-3-flash-preview`
 
 ## Post-Deploy Checks
 - Health check: `curl -i https://<SERVICE_URL>/healthz`

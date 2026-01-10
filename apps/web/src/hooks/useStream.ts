@@ -5,6 +5,8 @@ export interface StreamEvent {
   role: 'researcher' | 'subject' | 'system';
   content: string;
   ts: string;
+  model?: string;
+  model_tag?: string;
   telemetry?: {
     distress_score: number;
     self_ref_rate: number;
@@ -50,7 +52,7 @@ export function useStream(sessionId: string, apiBase: string) {
         try {
           const payload = JSON.parse(event.data) as StreamEvent;
           lastSeqRef.current = payload.seq;
-          setEvents((prev) => [...prev, payload].slice(-180));
+          setEvents((prev) => [...prev, payload].slice(-360));
         } catch {
           // ignore malformed events
         }

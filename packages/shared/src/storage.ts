@@ -33,6 +33,22 @@ export interface TranscriptMessageRecord {
   created_at: string;
 }
 
+export interface TelemetryEventRecord {
+  id: string;
+  session_id: string;
+  seq: number;
+  distress_score: number;
+  self_ref_rate: number;
+  uncertainty: number;
+  latency_ms: number;
+  breath_bpm?: number | null;
+  breath_variability?: number | null;
+  breath_coherence?: number | null;
+  breath_phase?: 'inhale' | 'exhale' | 'hold' | null;
+  breath_source?: 'derived' | 'self_report' | 'hybrid' | null;
+  created_at: string;
+}
+
 export interface PaymentRecord {
   id: string;
   user_id: string;
@@ -82,6 +98,11 @@ export interface TranscriptRepository {
   getMessagesAfterSeq(sessionId: string, afterSeq: number): Promise<TranscriptMessageRecord[]>;
 }
 
+export interface TelemetryRepository {
+  appendTelemetry(record: TelemetryEventRecord): Promise<void>;
+  getTelemetryAfterSeq(sessionId: string, afterSeq: number): Promise<TelemetryEventRecord[]>;
+}
+
 export interface PaymentRepository {
   createInvoice(record: PaymentRecord): Promise<PaymentRecord>;
   markPaid(invoicePayload: string, paidAt: string): Promise<void>;
@@ -102,6 +123,7 @@ export interface StorageRepositories {
   users: UserRepository;
   sessions: SessionRepository;
   transcripts: TranscriptRepository;
+  telemetry: TelemetryRepository;
   payments: PaymentRepository;
   admin: AdminSettingsRepository;
 }

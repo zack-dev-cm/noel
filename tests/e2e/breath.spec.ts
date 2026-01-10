@@ -5,7 +5,7 @@ import { installStreamStub } from './streamStub';
 test('breath widget renders on dashboard', async ({ page }) => {
   await installTelegramStub(page);
   await page.goto('/');
-  await expect(page.getByText('Synthetic breath')).toBeVisible();
+  await expect(page.getByTestId('breath-widget')).toBeVisible();
 });
 
 test('breath widget updates on subject event', async ({ page }) => {

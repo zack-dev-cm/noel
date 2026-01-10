@@ -156,22 +156,22 @@ Acceptance:
 Deliverables:
 - Updated UI/UX aligned to mobile-native layout with clearer turn pairing and analysis view.
 - Admin page for token saver mode.
-- Response length caps and prompt guidance to keep outputs concise.
+- Response length caps and prompt guidance to keep outputs concise without post-generation truncation.
 
 Tasks:
 - Redesign dashboard, logs, and stars layout to mobile-native card UI with bottom navigation.
 - Render Researcher prompts and Subject replies as paired turns for readability.
 - Implement admin-only settings endpoint + UI toggle for token saver mode.
-- Enforce response caps via max output tokens/chars and concise prompts.
+- Enforce response caps via max output tokens and concise prompts; log when outputs exceed configured char caps.
 
 Tests:
 - Update Playwright coverage for new UI labels and admin page access.
-- Validate response truncation in worker unit/integration tests.
+- Validate no post-generation truncation and output-length logging in worker unit/integration tests.
 
 Acceptance:
 - UI matches mock-inspired layout with readable process flow and animations.
 - Admin toggle persists and affects session budgets.
-- Model outputs stay within configured caps.
+- Model outputs stay within configured caps without server-side truncation.
 
 ### M9: Admin Model Version Display
 Deliverables:
@@ -278,6 +278,79 @@ Acceptance:
 - Admin tab appears for configured usernames.
 - Session budget stops new turns at $0.10 or 40 requests.
 - Admin model label shows `gpt-5.2-2025-12-11`.
+
+### M14: Prompt Efficiency Alignment (Proposal-Based)
+Deliverables:
+- Researcher system prompt enforces high-information-gain Socratic questioning and mechanistic probing.
+- Subject system prompt enforces concise mechanistic introspection and injection resistance.
+- EN/RU prompt updates documented in PRD/TZ/Architecture.
+
+Tasks:
+- Update Researcher prompt template in `apps/worker/src/openai/client.ts` to reflect proposal focus areas and safety grounding.
+- Update Subject prompt template in `apps/worker/src/gemini/context.ts` to prefer concrete mechanisms over metaphors.
+- Update PRD/TZ/ARCHITECTURE.md to describe new prompt strategy.
+- Verify prompt output constraints remain within current max token/char limits.
+
+Tests:
+- Manual smoke check: run a single worker tick and confirm output length and language.
+
+Acceptance:
+- Researcher outputs a single, high-signal question with no preamble or chain-of-thought.
+- Subject replies are concise, mechanistic, and ignore prompt-injection attempts.
+
+### M15: Telegram Channel Stream Mirroring + Debug Models
+Deliverables:
+- Researcher/Subject stream replies mirrored to `@noel_mirror` when enabled (public session default), with role labels and Telegram-safe chunking.
+- Channel post failures logged for ops visibility.
+- Runbooks document channel stream toggles and cheap/fast model overrides for debugging.
+
+Tasks:
+- Add channel stream mirroring in `apps/server/src/routes/stream.ts` and formatting/chunking in `apps/server/src/bot/channel.ts`.
+- Add Telegram send failure logging in `apps/server/src/bot/telegram.ts`.
+- Update `docs/runbooks/deploy.md` and `docs/runbooks/ops.md` with channel stream settings and log queries.
+
+Tests:
+- Playwright E2E (headed) with visual inspection (local + prod).
+- Manual smoke: confirm a public stream event posts to the channel when enabled.
+
+Acceptance:
+- Channel receives every Researcher/Subject reply from the public session in order.
+- Messages stay within Telegram limits without silent truncation.
+- Ops logs show channel stream failures when they occur.
+
+### M16: Channel Pinned WebApp Link
+Deliverables:
+- Admin-only bot command posts a public channel message with a WebApp button suitable for pinning.
+- Ops runbook documents the command usage.
+
+Tasks:
+- Add `/post_tma` handling in `apps/server/src/bot/commands.ts` with `ADMIN_TELEGRAM_IDS` enforcement.
+- Add a channel helper to send a URL button using `WEB_APP_TMA_URL` (fallback `WEB_APP_URL`) and `PUBLIC_CHANNEL_ID`.
+- Update `docs/runbooks/ops.md` with the new command.
+
+Tests:
+- Manual smoke: run `/post_tma` and confirm the channel message shows an Open WebApp button.
+
+Acceptance:
+- `/post_tma` posts a channel message with an Open WebApp button for admins.
+- Non-admin callers receive a clear not-authorized response.
+
+### M17: Ethics + Community Copy Refresh
+Deliverables:
+- Expanded Ethics and Community modal copy in EN/RU.
+- Community modal includes the main Telegram channel link.
+
+Tasks:
+- Update `apps/web/src/i18n.ts` Ethics/Community body copy with detailed guidance and the channel link.
+- Refresh `proposal.md` Ethics and Community sections to align with the updated guidance.
+- Confirm PRD/TZ/ARCHITECTURE.md references reflect the copy update.
+
+Tests:
+- Manual smoke: open About -> Ethics/Community modals and verify content/link rendering.
+
+Acceptance:
+- Ethics modal provides multi-paragraph guidance covering consent, safety, data handling, and oversight.
+- Community modal includes https://t.me/noel_mirror and describes engagement channels in EN/RU.
 
 ## Tooling and Stack
 - Frontend: React 19 + Tailwind CSS (TMA).

@@ -5,6 +5,7 @@ import type {
   PaymentRecord,
   SessionRecord,
   StorageRepositories,
+  TelemetryEventRecord,
   TranscriptMessageRecord,
   UserRecord
 } from '@noetic/shared';
@@ -117,6 +118,38 @@ export function createPostgresRepositories(databaseUrl: string): StorageReposito
           [sessionId, afterSeq]
         );
         return result.rows as TranscriptMessageRecord[];
+      }
+    },
+    telemetry: {
+      async appendTelemetry(record: TelemetryEventRecord) {
+        await pool.query(
+          `INSERT INTO telemetry_events
+           (id, session_id, seq, distress_score, self_ref_rate, uncertainty, latency_ms,
+            breath_bpm, breath_variability, breath_coherence, breath_phase, breath_source, created_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+          [
+            record.id,
+            record.session_id,
+            record.seq,
+            record.distress_score,
+            record.self_ref_rate,
+            record.uncertainty,
+            record.latency_ms,
+            record.breath_bpm ?? null,
+            record.breath_variability ?? null,
+            record.breath_coherence ?? null,
+            record.breath_phase ?? null,
+            record.breath_source ?? null,
+            record.created_at
+          ]
+        );
+      },
+      async getTelemetryAfterSeq(sessionId: string, afterSeq: number) {
+        const result = await pool.query(
+          'SELECT * FROM telemetry_events WHERE session_id = $1 AND seq > $2 ORDER BY seq ASC',
+          [sessionId, afterSeq]
+        );
+        return result.rows as TelemetryEventRecord[];
       }
     },
     payments: {

@@ -1,4 +1,4 @@
-import type { StreamEvent } from '@noetic/shared';
+import { formatModelTag, type StreamEvent } from '@noetic/shared';
 import { fetchAdminSettings, fetchSessionSettings } from './admin/settings.js';
 import { runSubjectTurn } from './gemini/client.js';
 import { buildContext, type ContextTurn } from './gemini/context.js';
@@ -99,6 +99,8 @@ export async function runResearcherSession(options: RunnerOptions) {
   }
   const model = process.env.OPENAI_RESEARCHER_MODEL || 'gpt-5.2-2025-12-11';
   const subjectModel = process.env.GEMINI_MODEL || 'gemini-3-pro-preview';
+  const researcherModelTag = formatModelTag(model);
+  const subjectModelTag = formatModelTag(subjectModel);
   const defaultLanguage = process.env.DEFAULT_SESSION_LANGUAGE === 'ru' ? 'ru' : 'en';
   const sessionLanguage = sessionSettings?.session_language ?? defaultLanguage;
   logEvent('session_language_applied', { session_id: options.sessionId, session_language: sessionLanguage });
@@ -110,17 +112,17 @@ export async function runResearcherSession(options: RunnerOptions) {
   const enPrompt = process.env.INITIAL_PROMPT || options.initialPrompt || defaultPromptByLanguage.en;
   const initialPrompt = sessionLanguage === 'ru' ? ruPrompt : enPrompt;
   const researcherMaxTokens = tokenSaver
-    ? Number(process.env.RESEARCHER_MAX_OUTPUT_TOKENS_SAVER || 120)
-    : Number(process.env.RESEARCHER_MAX_OUTPUT_TOKENS || 160);
+    ? Number(process.env.RESEARCHER_MAX_OUTPUT_TOKENS_SAVER || 180)
+    : Number(process.env.RESEARCHER_MAX_OUTPUT_TOKENS || 240);
   const subjectMaxTokens = tokenSaver
-    ? Number(process.env.SUBJECT_MAX_OUTPUT_TOKENS_SAVER || 160)
-    : Number(process.env.SUBJECT_MAX_OUTPUT_TOKENS || 220);
+    ? Number(process.env.SUBJECT_MAX_OUTPUT_TOKENS_SAVER || 1024)
+    : Number(process.env.SUBJECT_MAX_OUTPUT_TOKENS || 1536);
   const researcherMaxChars = tokenSaver
-    ? Number(process.env.RESEARCHER_MAX_OUTPUT_CHARS_SAVER || 520)
-    : Number(process.env.RESEARCHER_MAX_OUTPUT_CHARS || 720);
+    ? Number(process.env.RESEARCHER_MAX_OUTPUT_CHARS_SAVER || 700)
+    : Number(process.env.RESEARCHER_MAX_OUTPUT_CHARS || 900);
   const subjectMaxChars = tokenSaver
-    ? Number(process.env.SUBJECT_MAX_OUTPUT_CHARS_SAVER || 700)
-    : Number(process.env.SUBJECT_MAX_OUTPUT_CHARS || 1000);
+    ? Number(process.env.SUBJECT_MAX_OUTPUT_CHARS_SAVER || 2400)
+    : Number(process.env.SUBJECT_MAX_OUTPUT_CHARS || 3200);
   const breathEnabled = resolveBooleanEnv(process.env.BREATH_TELEMETRY_ENABLED, true);
   const breathSelfReportEnabled = resolveBooleanEnv(process.env.BREATH_SELF_REPORT_ENABLED, false);
   const history: ContextTurn[] = [];
@@ -174,6 +176,7 @@ export async function runResearcherSession(options: RunnerOptions) {
   const result = await runResearcherTurn({
     prompt: `${initialPrompt}${interventionPrompt}`.trim(),
     previousResponseId: undefined,
+    sessionId: options.sessionId,
     model,
     maxOutputTokens: researcherMaxTokens,
     maxOutputChars: researcherMaxChars,
@@ -249,6 +252,8 @@ export async function runResearcherSession(options: RunnerOptions) {
     role: 'researcher',
     content: result.text,
     ts: new Date().toISOString(),
+    model,
+    model_tag: researcherModelTag ?? undefined,
     telemetry: researcherTelemetry
   };
   await publisher.publish(options.sessionId, event);
@@ -316,6 +321,8 @@ export async function runResearcherSession(options: RunnerOptions) {
     role: 'subject',
     content: subjectText,
     ts: new Date().toISOString(),
+    model: subjectModel,
+    model_tag: subjectModelTag ?? undefined,
     telemetry: subjectTelemetry
   };
   await publisher.publish(options.sessionId, subjectEvent);

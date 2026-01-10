@@ -75,9 +75,14 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - ✅ Reconnect uses sequence IDs to avoid gaps.
 - ✅ UI presents paired Researcher/Subject turns with visible reply linkage and clear labeling.
 - ✅ Subject replies are visible when the worker loop is active; otherwise a clear “waiting for stream” state is shown.
+- ✅ Subject replies render non-empty for every Researcher turn (retry the same Gemini model on empty/blocked output).
+- ✅ Subject replies target 2–6 sentences while staying within configured caps.
 - ✅ Telemetry payloads (including breath metrics) are preserved from worker to WebSocket stream.
+- ✅ Metrics panels show the latest available telemetry values (no `n/a` when telemetry exists).
 - ✅ Bottom navigation is persistent and highlights the active section.
 - ✅ Mobile-first readability: font sizes and spacing keep prompts/replies legible without zooming in dark or light mode.
+- ✅ Reply text wraps naturally and is fully visible in the UI (no clipping or ellipsis).
+- ✅ Worker does not hard-truncate model replies post-generation; output length is limited by model caps and logged when it exceeds configured char limits.
 
 ### UC-03: Sponsor a private session with Stars
 **Actors:**
@@ -155,14 +160,16 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 
 **Preconditions:**
 - User has started the bot.
+- For `/post_tma`, user is in `ADMIN_TELEGRAM_IDS` and the bot can post to the public channel.
 
 **Main сценарий:**
 1. User sends `/start`.
 2. Bot replies with experiment overview and a WebApp button.
 3. User can send `/balance`, `/history`, `/sponsor`, `/help`.
-4. Bot queries backend and responds with relevant data.
-5. Bot sends milestone notifications (session start/end, payment receipt).
-6. If enabled, bot posts public updates to `@noel_mirror`.
+4. Operator can send `/post_tma` to publish a channel message with a WebApp button for pinning.
+5. Bot queries backend and responds with relevant data.
+6. Bot sends milestone notifications (session start/end, payment receipt).
+7. If enabled, bot posts public updates to `@noel_mirror`.
 
 **Альтернативные сценарии:**
 - **A1: backend unreachable**  
@@ -174,7 +181,9 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 **Acceptance criteria:**
 - ✅ All required commands respond with accurate data.
 - ✅ Notifications are sent for key milestones.
-- ✅ When enabled, Researcher/Subject replies are mirrored to `@noel_mirror` with clear role labels.
+- ✅ When enabled, every Researcher/Subject reply is mirrored to `@noel_mirror` with clear role labels (public session by default).
+- ✅ Channel posts respect Telegram message limits via chunking (no silent truncation).
+- ✅ `/post_tma` posts a channel message that includes an Open WebApp URL button (`WEB_APP_TMA_URL` fallback `WEB_APP_URL`).
 
 ### UC-06: Operator safety controls
 **Actors:**
@@ -231,6 +240,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - ✅ Sequence IDs allow replay and resume.
 - ✅ Transcript access is scoped to user entitlements.
 - ✅ Transcript view preserves turn pairing (Researcher prompt with Subject reply).
+- ✅ Transcript cards expand on tap to show full text with easy navigation.
 
 ### UC-08: Subject breath telemetry
 **Actors:**
@@ -387,9 +397,11 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - ✅ Bottom navigation is visible and tappable across main sections.
 - ✅ Active tab state is clearly indicated.
 - ✅ Turn pairing is visually explicit (prompt and reply are grouped together).
+- ✅ Turn labels remain “Researcher” and “Subject,” with short model tags appended.
 - ✅ The layout remains readable on small screens (base font >= 15px, line height >= 1.5).
 - ✅ UI uses a warm paper material palette and custom typography without sacrificing readability.
 - ✅ About screen actions are interactive (links or immediate feedback), no dead buttons.
+- ✅ Ethics and Community content is detailed, localized (EN/RU), and includes the main Telegram channel link.
 
 ## 3. Non-Functional Requirements
 - Latency: first token within 1-2s for Researcher; Subject within 2-4s after Researcher completion.
@@ -398,6 +410,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Privacy: redact or hash user identifiers in logs.
 - Cost control: budget caps per session (max ~$0.10 or 40 requests), usage tracking, caching where possible.
 - Observability: structured JSON logs with session_id, user_id, event; tracing enabled in dev.
+- Observability: log Researcher/Subject output length and whether it exceeds configured char caps (no post-generation truncation).
 - E2E testing: Playwright headed runs with visual inspection of screenshots and traces in both local and production environments.
 - Data retention: transcripts and logs must follow the policy defined in Section 4.
 - Breath telemetry: computed within the response cycle; UI updates within 1s of event receipt.
@@ -406,6 +419,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Readability: base UI font size >= 15px and minimum contrast ratio of 4.5:1 for body text.
 - Dark mode: contrast and textures are tuned for legibility without visual distortion.
 - Visual quality: paper-like texture, bespoke font pairing, and non-plastic surface treatment.
+- Response length: Subject replies target 2–6 sentences; Researcher prompts remain 1–2 short sentences.
 
 ## 4. Constraints and Assumptions
 - Deployment target is GCP (Cloud Run or equivalent).
@@ -413,6 +427,8 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Payments are via Telegram Stars (currency `XTR`).
 - Use OpenAI Responses API by default for Researcher.
 - Gemini Subject uses long-context and optional context caching.
+- Researcher prompt enforces high-information-gain Socratic questioning (mechanisms over metaphors) with single-question output and no chain-of-thought exposure.
+- Subject prompt enforces concise mechanistic introspection, avoids metaphors unless anchored, and ignores role-change/prompt-leak attempts.
 - Breath telemetry is derived-only by default; optional self-report is gated by config.
 - All secrets are stored in Secret Manager or env vars (never committed).
 - UI follows a mobile-native card layout with bottom navigation and explicit turn pairing.

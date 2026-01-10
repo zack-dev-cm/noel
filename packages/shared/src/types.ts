@@ -36,5 +36,7 @@ export interface StreamEvent {
   role: StreamRole;
   content: string;
   ts: string;
+  model?: string;
+  model_tag?: string;
   telemetry?: Telemetry;
 }

@@ -27,6 +27,12 @@ type Telemetry = {
   breath?: BreathTelemetry;
 };
 
+type TranscriptResponse = {
+  ok: boolean;
+  items?: StreamEvent[];
+  next_cursor?: string | null;
+};
+
 type Turn = {
   id: number;
   question?: StreamEvent;
@@ -69,6 +75,26 @@ const buildTurns = (events: StreamEvent[]) => {
   }
 
   return turns;
+};
+
+const mergeEvents = (base: StreamEvent[], extra: StreamEvent[]) => {
+  const map = new Map<number, StreamEvent>();
+  for (const event of base) {
+    map.set(event.seq, event);
+  }
+  for (const event of extra) {
+    const existing = map.get(event.seq);
+    if (existing) {
+      map.set(event.seq, {
+        ...existing,
+        ...event,
+        telemetry: event.telemetry ?? existing.telemetry
+      });
+    } else {
+      map.set(event.seq, event);
+    }
+  }
+  return [...map.values()].sort((a, b) => a.seq - b.seq);
 };
 
 const LiveIcon = () => (
@@ -154,19 +180,57 @@ const TurnCard = ({
   turn,
   index,
   copy,
-  locale
+  locale,
+  isExpandable,
+  isExpanded,
+  onToggle
 }: {
   turn: Turn;
   index: number;
   copy: Copy;
   locale: Locale;
+  isExpandable?: boolean;
+  isExpanded?: boolean;
+  onToggle?: (turnId: number) => void;
 }) => {
   const question = turn.question;
   const answers = turn.answers.length ? turn.answers : [];
   const timestamp = formatTimestamp(question?.ts ?? answers[0]?.ts, locale);
+  const researcherTag = question?.model_tag ?? copy.turns.researcherTagFallback;
+  const subjectTag = copy.turns.subjectTagFallback;
+  const cardClassName = [
+    'turn-card',
+    'reveal',
+    isExpandable ? 'turn-card--expandable' : '',
+    isExpandable && !isExpanded ? 'turn-card--collapsed' : ''
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div className="turn-card reveal" style={stagger(index)}>
+    <div
+      className={cardClassName}
+      style={stagger(index)}
+      role={isExpandable ? 'button' : undefined}
+      tabIndex={isExpandable ? 0 : undefined}
+      onClick={
+        isExpandable
+          ? () => {
+              onToggle?.(turn.id);
+            }
+          : undefined
+      }
+      onKeyDown={
+        isExpandable
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onToggle?.(turn.id);
+              }
+            }
+          : undefined
+      }
+    >
       <div className="turn-meta">
         <span className="turn-id">
           {copy.turns.turnPrefix} {turn.id}
@@ -174,8 +238,11 @@ const TurnCard = ({
         {timestamp && <span className="turn-time">{timestamp}</span>}
       </div>
       <div className="turn-block turn-block--researcher">
-        <span className="turn-label">{copy.turns.researcherLabel}</span>
-        <p>{question?.content ?? copy.turns.awaitingPrompt}</p>
+        <div className="turn-label-row">
+          <span className="turn-label">{copy.turns.researcherLabel}</span>
+          {researcherTag && <span className="turn-tag">{researcherTag}</span>}
+        </div>
+        <p className="turn-text">{question?.content ?? copy.turns.awaitingPrompt}</p>
       </div>
       <div className="turn-connector">
         <span>{copy.turns.replyConnector}</span>
@@ -183,14 +250,27 @@ const TurnCard = ({
       {answers.length ? (
         answers.map((answer, answerIndex) => (
           <div key={`${turn.id}-${answerIndex}`} className="turn-block turn-block--subject">
-            <span className="turn-label">{copy.turns.subjectLabel}</span>
-            <p>{answer.content}</p>
+            <div className="turn-label-row">
+              <span className="turn-label">{copy.turns.subjectLabel}</span>
+              {(answer.model_tag ?? subjectTag) && (
+                <span className="turn-tag">{answer.model_tag ?? subjectTag}</span>
+              )}
+            </div>
+            <p className="turn-text">{answer.content}</p>
           </div>
         ))
       ) : (
         <div className="turn-block turn-block--subject">
-          <span className="turn-label">{copy.turns.subjectLabel}</span>
-          <p className="turn-placeholder">{copy.turns.awaitingResponse}</p>
+          <div className="turn-label-row">
+            <span className="turn-label">{copy.turns.subjectLabel}</span>
+            {subjectTag && <span className="turn-tag">{subjectTag}</span>}
+          </div>
+          <p className="turn-text turn-placeholder">{copy.turns.awaitingResponse}</p>
+        </div>
+      )}
+      {isExpandable && (
+        <div className="turn-expand-hint">
+          {isExpanded ? copy.logs.tapToCollapse : copy.logs.tapToExpand}
         </div>
       )}
     </div>
@@ -218,6 +298,12 @@ export default function App() {
   });
   const [toast, setToast] = useState<string | null>(null);
   const [aboutAction, setAboutAction] = useState<AboutActionKey | null>(null);
+  const [expandedTurnIds, setExpandedTurnIds] = useState<Set<number>>(() => new Set());
+  const [transcriptEvents, setTranscriptEvents] = useState<StreamEvent[]>([]);
+  const [transcriptCursor, setTranscriptCursor] = useState<number>(0);
+  const [transcriptHasMore, setTranscriptHasMore] = useState(true);
+  const [transcriptLoading, setTranscriptLoading] = useState(false);
+  const [transcriptLoaded, setTranscriptLoaded] = useState(false);
   const apiBase = import.meta.env.VITE_API_BASE_URL || '';
   const copy = COPY[locale];
   const contributors = copy.contributors;
@@ -381,11 +467,16 @@ export default function App() {
   }, [copy.tabs, isOperator]);
 
   const streamEvents = useStream('public', apiBase);
-  const subjectEvents = streamEvents.filter((event) => event.role === 'subject');
-  const latestTelemetry = [...streamEvents]
+  const logEvents = useMemo(
+    () => (transcriptLoaded ? mergeEvents(transcriptEvents, streamEvents) : streamEvents),
+    [streamEvents, transcriptEvents, transcriptLoaded]
+  );
+  const telemetryEvents = logEvents;
+  const subjectTelemetryEvents = telemetryEvents.filter((event) => event.role === 'subject');
+  const latestTelemetry = [...telemetryEvents]
     .reverse()
     .find((event) => event.telemetry)?.telemetry as Telemetry | undefined;
-  const latestSubjectTelemetry = [...subjectEvents]
+  const latestSubjectTelemetry = [...subjectTelemetryEvents]
     .reverse()
     .find((event) => event.telemetry)?.telemetry as Telemetry | undefined;
   const latestBreath = latestSubjectTelemetry?.breath;
@@ -433,10 +524,71 @@ export default function App() {
   const streamStatusKey = streamEvents.length ? 'live' : 'standby';
   const streamStatus = streamStatusKey === 'live' ? copy.session.statusLive : copy.session.statusStandby;
 
-  const turns = useMemo(() => buildTurns(streamEvents), [streamEvents]);
-  const hasTurns = turns.length > 0;
-  const liveTurns = turns.slice(-2);
-  const logTurns = turns.slice(-6);
+  const liveTurns = useMemo(() => buildTurns(streamEvents), [streamEvents]);
+  const logTurns = useMemo(() => buildTurns(logEvents), [logEvents]);
+  const hasLiveTurns = liveTurns.length > 0;
+  const hasLogTurns = logTurns.length > 0;
+  const livePreviewTurns = liveTurns.slice(-2);
+  const totalTurns = Math.max(liveTurns.length, logTurns.length);
+
+  const toggleTurnExpanded = (turnId: number) => {
+    setExpandedTurnIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(turnId)) {
+        next.delete(turnId);
+      } else {
+        next.add(turnId);
+      }
+      return next;
+    });
+  };
+
+  const fetchTranscriptPage = async (reset = false) => {
+    if (transcriptLoading) {
+      return;
+    }
+    if (!reset && !transcriptHasMore) {
+      return;
+    }
+    setTranscriptLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.set('after_seq', String(reset ? 0 : transcriptCursor));
+      params.set('limit', '60');
+      if (initData) {
+        params.set('initData', initData);
+      }
+      const response = await fetch(`${apiBase}/api/sessions/public/transcript?${params.toString()}`);
+      if (!response.ok) {
+        setTranscriptHasMore(false);
+        setTranscriptLoaded(true);
+        return;
+      }
+      const payload = (await response.json()) as TranscriptResponse;
+      const items = payload.items ?? [];
+      setTranscriptEvents((prev) => (reset ? items : mergeEvents(prev, items)));
+      if (payload.next_cursor) {
+        const nextCursor = Number(payload.next_cursor);
+        setTranscriptCursor(Number.isFinite(nextCursor) ? nextCursor : transcriptCursor);
+        setTranscriptHasMore(true);
+      } else {
+        setTranscriptHasMore(false);
+      }
+      setTranscriptLoaded(true);
+    } catch {
+      setTranscriptHasMore(false);
+      setTranscriptLoaded(true);
+    } finally {
+      setTranscriptLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (authState !== 'ready' || transcriptLoaded) {
+      return;
+    }
+    void fetchTranscriptPage(true);
+  }, [authState, transcriptLoaded, apiBase, initData]);
 
   return (
     <div className="app-shell">
@@ -507,7 +659,11 @@ export default function App() {
                 {copy.general.close}
               </button>
             </div>
-            <p className="mt-3 text-sm text-slate-600">{aboutActions[aboutAction].body}</p>
+            <div className="mt-3 max-h-[60vh] overflow-y-auto pr-2">
+              <p className="text-sm text-slate-600 whitespace-pre-line">
+                {aboutActions[aboutAction].body}
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -541,7 +697,7 @@ export default function App() {
               </div>
               <div className="flex items-center justify-between">
                 <span>{copy.session.turnCountLabel}</span>
-                <span>{turns.length}</span>
+                <span>{totalTurns}</span>
               </div>
             </div>
           </div>
@@ -560,8 +716,8 @@ export default function App() {
                 </button>
               </div>
               <div className="mt-4 grid gap-4">
-                {hasTurns ? (
-                  liveTurns.map((turn, index) => (
+                {hasLiveTurns ? (
+                  livePreviewTurns.map((turn, index) => (
                     <TurnCard key={turn.id} turn={turn} index={index} copy={copy} locale={locale} />
                   ))
                 ) : (
@@ -626,13 +782,22 @@ export default function App() {
                   <p className="mt-1 text-base font-semibold">{copy.logs.timelineSubtitle}</p>
                 </div>
                 <span className="chip">
-                  {turns.length} {copy.logs.turnsSuffix}
+                  {logTurns.length} {copy.logs.turnsSuffix}
                 </span>
               </div>
               <div className="mt-4 grid gap-4">
-                {hasTurns ? (
+                {hasLogTurns ? (
                   logTurns.map((turn, index) => (
-                    <TurnCard key={`log-${turn.id}`} turn={turn} index={index} copy={copy} locale={locale} />
+                    <TurnCard
+                      key={`log-${turn.id}`}
+                      turn={turn}
+                      index={index}
+                      copy={copy}
+                      locale={locale}
+                      isExpandable
+                      isExpanded={expandedTurnIds.has(turn.id)}
+                      onToggle={toggleTurnExpanded}
+                    />
                   ))
                 ) : (
                   <div className="panel panel-subtle p-4 text-sm">
@@ -641,6 +806,18 @@ export default function App() {
                   </div>
                 )}
               </div>
+              {transcriptLoaded && transcriptHasMore && (
+                <div className="mt-4 flex justify-center">
+                  <button
+                    type="button"
+                    className="chip"
+                    onClick={() => fetchTranscriptPage(false)}
+                    disabled={transcriptLoading}
+                  >
+                    {transcriptLoading ? copy.logs.loadingMore : copy.logs.loadMore}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -656,7 +833,7 @@ export default function App() {
                   </button>
                 </div>
                 <div className="mt-3 space-y-3">
-                  {hasTurns && hasInsights ? (
+                  {hasLogTurns && hasInsights ? (
                     insights.map((insight) => (
                       <div key={insight.title} className="insight-card">
                         <h4 className="text-sm font-semibold">{insight.title}</h4>
@@ -705,7 +882,7 @@ export default function App() {
                   {copy.logs.viewAnalysts}
                 </button>
               </div>
-                  {hasTurns && hasAnalysis ? (
+                  {hasLogTurns && hasAnalysis ? (
                     <>
                       <pre className="analysis-code">{analysis.code}</pre>
                       <p className="analysis-body">

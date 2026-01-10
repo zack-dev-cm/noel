@@ -4,6 +4,7 @@ export function truncateText(value: string, maxChars: number): string {
   }
   const slice = value.slice(0, maxChars);
   const lastBreak = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('! '), slice.lastIndexOf('? '));
-  const trimmed = lastBreak > 80 ? slice.slice(0, lastBreak + 1) : slice.trimEnd();
+  const minBreak = Math.min(Math.max(120, Math.floor(maxChars * 0.4)), maxChars - 20);
+  const trimmed = lastBreak > minBreak ? slice.slice(0, lastBreak + 1) : slice.trimEnd();
   return `${trimmed}…`;
 }

@@ -28,8 +28,9 @@ router.post('/telegram/webhook/:secret', async (req, res) => {
     const text = update.message.text.trim().split(' ')[0];
     const chatId = update.message.chat?.id;
     const telegramId = String(update.message.from?.id || '');
+    const username = update.message.from?.username ?? null;
     if (chatId) {
-      await handleCommand(botToken, text, chatId, telegramId, storage);
+      await handleCommand(botToken, text, chatId, telegramId, storage, username);
     }
     return res.json({ ok: true });
   }

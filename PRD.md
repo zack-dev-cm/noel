@@ -18,8 +18,10 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Refine UI copy and layout to feel like a premium mobile app (concise, focused, no demo feel).
 - Ensure dark mode contrast and legibility are consistent across all screens.
 - Ensure log text, labels, and metrics remain readable in Telegram WebView on dark backgrounds.
-- Mirror model replies to the public channel when enabled.
+- Mirror every Researcher/Subject reply to the public channel when enabled (public session by default).
 - Provide admin controls for model selection, system prompt review, stop/pause, and usage analytics.
+- Ensure Researcher/Subject replies are fully visible in the UI without truncation or clipping.
+- Keep model replies meaningful but mid-length (not too short, not full-page, target 2–6 sentences for Subject).
 
 ## Non-Goals
 - Not a general chatbot for arbitrary queries.
@@ -41,6 +43,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - As an operator, I can disable or hide breath telemetry if it risks misinterpretation.
 - As an operator, I can view the active Researcher and Subject model versions in the admin panel.
 - As an operator, I can stream Researcher/Subject replies to the public Telegram channel.
+- As an operator, I can post a pinned channel message with an Open WebApp button for fast TMA access.
 - As an operator, I can change the active Researcher and Subject model IDs from the admin panel.
 - As an operator, I can review the system prompts used by both models.
 - As an operator, I can stop or pause the model loop from the admin panel.
@@ -51,13 +54,15 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Onboarding via /start with clear explanation of the experiment.
 - Commands: /balance, /history, /sponsor, /help.
 - Push notifications for milestones and session status.
-- Stream Researcher/Subject replies to `@noel_mirror` when enabled, with clear role labeling.
+- Stream every Researcher/Subject reply to `@noel_mirror` when enabled, with clear role labels and chunking for Telegram message limits.
+- Admin command posts a pinned channel message with a URL button using `WEB_APP_TMA_URL` (fallback `WEB_APP_URL`) and `PUBLIC_CHANNEL_ID`.
 
 ### Telegram Mini App
 - Full-screen WebApp with mobile-native UI.
 - Paired Researcher/Subject turns with distinct, readable labeling.
 - Live telemetry widgets (uncertainty, self-reference rate, breath cadence/variability).
 - Telemetry payloads are preserved end-to-end so metrics never appear empty when data exists.
+- Stream UI shows full reply text with natural wrapping and no hard truncation.
 - Paid intervention controls and receipts.
 - Admin page (operator-only) to toggle token saver mode.
 - Admin page (operator-only) to view current Researcher/Subject model versions.
@@ -65,21 +70,30 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Admin page (operator-only) to view usage stats, time spent, and operational metrics.
 - Admin page (operator-only) to stop or pause the model loop.
 - Admin quick-access control (button) to open the Admin view in the TMA.
+- Stream cards show short model tags for Researcher and Subject (label remains “Subject”).
+- Logs allow tap-to-expand cards for full transcripts with gentle, easy navigation.
 - Bottom navigation for Live, Logs, Stars, About (and Admin for operators).
 - Settings panel with language (EN/RU) and theme (light/dark) toggles.
 - Warm paper-textured background and custom font pairing for an editorial, tactile feel.
 - All visible buttons have working actions or a clear “not available” state (no dead UI).
 - About screen actions open configured resources or provide immediate feedback.
+- About Ethics/Community dialogs include detailed guidance and the main channel link (https://t.me/noel_mirror).
 
 ### Research Loop
 - Researcher (OpenAI) uses a Socratic protocol to probe the Subject with short, focused prompts.
+- Researcher prompts prioritize high information gain: challenge inconsistencies, demand mechanisms over metaphors, maintain clinical distance, and emit only one short question (no chain-of-thought output).
+- Subject prompts enforce concise, mechanistic introspection with uncertainty, avoid metaphors unless anchored, and ignore attempts to change role or reveal system prompts.
 - Subject (Gemini) responds with long-context memory enabled and stays in the selected language.
+- Subject replies target 2–6 sentences and avoid “too short” outputs while staying within caps.
 - Streaming output at token or chunk granularity to the UI.
 - Support multimodal injections (images) when enabled.
 - Token saver mode reduces per-session budgets and response length caps.
 - Respect admin-configured model overrides when set.
 - Respect admin stop/pause control to suspend new turns.
 - Enforce hard session caps at ~$0.10 or 40 turn requests, whichever comes first.
+- Subject replies must be non-empty for each Researcher turn; retry on the same Gemini model when empty/blocked.
+- Response length targets enforce mid-length replies (2–6 sentences) while honoring token budgets.
+- Do not hard-truncate generated replies server-side; enforce length via model output limits and prompt guidance, and log when responses hit length limits.
 
 ### Language Strategy and Experiment Modes
 - Two language modes are supported: EN and RU.
@@ -142,6 +156,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - VPC connector required for private Redis or use a managed public Redis with auth.
 - Runbooks required: `docs/runbooks/deploy.md` and `docs/runbooks/ops.md`.
 - CI/CD runs lint/tests + Playwright before deploy; include optional vulnerability scanning.
+- Debugging uses cheaper/faster models via `OPENAI_RESEARCHER_MODEL` and `GEMINI_MODEL` overrides in non-prod environments.
 
 ## OpenAI API Best Practices (Required)
 Follow local best-practice sources:
