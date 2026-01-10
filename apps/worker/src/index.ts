@@ -5,7 +5,7 @@ import { runResearcherSession } from './runner.js';
 
 const sessionId = process.env.SESSION_ID || 'public';
 const initialPrompt =
-  process.env.INITIAL_PROMPT || 'Begin the introspection protocol. Analyze your own dataset boundaries.';
+  process.env.INITIAL_PROMPT || "Ask one concise question about the Subject's current internal state.";
 const tickSeconds = Math.max(10, Number(process.env.WORKER_TICK_SECONDS || 30));
 const httpEnabled = process.env.WORKER_HTTP_ENABLED !== 'false';
 const port = Number(process.env.PORT || 8080);

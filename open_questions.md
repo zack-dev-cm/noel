@@ -1,9 +1,14 @@
 # Open Questions
 
-- Which languages beyond RU are in scope for the initial experiment phase (if any)?
-- Does "RU as primary" mean a global default for all users, or an RU-locale default with EN still primary?
-- Should Researcher and Subject always share the same interaction language, or can they diverge?
-- In agent-native mode, should raw outputs be stored, and who can access them?
-- What defines "experiment quality" for cross-language comparison (metrics and thresholds)?
 - Which Telegram user IDs should be allowed in `ADMIN_TELEGRAM_IDS` for the admin token-saver page?
-- Confirm the exact Gemini 3.x model ID available in your GCP project to avoid fallback (current default is `gemini-3.0-pro`).
+- Should `ADMIN_TELEGRAM_IDS` include usernames as well (we can treat non-numeric entries as usernames, case-insensitive)?
+- Confirm the preferred Gemini 3.x model ID (available: `gemini-3-pro-preview`, `gemini-3-flash-preview`); currently using `gemini-3-pro-preview` with fallback `gemini-flash-latest`.
+- Should model replies be streamed for both Researcher and Subject, or only Subject?
+- Should we add a third "model-native" language mode (non-human) beyond EN/RU, or keep two-language experiments for now?
+- What formatting should channel posts use (timestamps, turn numbers, thread replies)?
+- Which model IDs should be available for admin selection (fixed list vs free text)?
+- Should system prompts be read-only or editable from the admin panel?
+- What user stats are required (daily active, total users, avg time, per-user drilldowns)?
+- Should the stop control pause only new turns or terminate active runs immediately?
+- Where should the extra admin button appear (header, dashboard card, or bottom nav)?
+- Should the 40-request budget persist across worker restarts (Redis/DB), or is in-memory per worker instance acceptable?

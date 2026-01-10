@@ -1,19 +1,31 @@
 # Architecture - Project Noetic Mirror
 
 ## 1. Task Description
-This document implements the architecture for `TZ.md` (Project Noetic Mirror). The system is a Telegram Mini App (TMA) that streams a live Researcher (OpenAI) ↔ Subject (Gemini) loop, with Stars payments, safety controls, session persistence, and GCP deployment.
+This document implements the architecture for `TZ.md` (Project Noetic Mirror). The system is a Telegram Mini App (TMA) that streams a live Researcher (OpenAI) ↔ Subject (Gemini) loop, with Stars payments, safety controls, session persistence, and GCP deployment, plus a mobile-native UI with bottom navigation, explicit turn pairing, EN/RU + theme toggles, and enhanced logging to debug empty Subject replies.
 
 ## 2. Functional Architecture
 
 ### 2.1 Functional Components
 
 **Component: WebApp UX**
-- Purpose: Present live streams, telemetry, payments, and logs using the retro UI from `mocks.md`.
+- Purpose: Present live streams, telemetry, payments, and logs with a mobile-native UI that pairs Researcher prompts to Subject replies and uses bottom navigation.
 - Functions:
-  - Render dual Researcher/Subject streams with distinct color coding.
+  - Render paired Researcher/Subject turns with explicit reply linkage and clear labeling.
     - Inputs: stream events (WS)
     - Outputs: UI updates
-    - UC: UC-02, UC-07
+    - UC: UC-02, UC-07, UC-12
+  - Provide bottom navigation between Live, Logs, Stars, About (and Admin for operators).
+    - Inputs: user role, tab state
+    - Outputs: navigational UI state
+    - UC: UC-12
+  - Apply paper-material design system (custom font pairing, textured backgrounds, warm palette).
+    - Inputs: global CSS tokens
+    - Outputs: tactile UI styling
+    - UC: UC-12
+  - Render language and theme toggles; apply localization and theme in real time.
+    - Inputs: user preferences, session language
+    - Outputs: localized UI, theme state, preference updates
+    - UC: UC-09
   - Render Stars UI (tiers, interventions, receipts).
     - Inputs: pricing catalog, entitlements
     - Outputs: invoice trigger
@@ -37,6 +49,19 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
     - UC: UC-01
 - Dependencies: User Store (Postgres).
 
+**Component: Preferences & Localization**
+- Purpose: Persist user UI preferences and session language mode.
+- Functions:
+  - Read/write user preferences (ui_locale, ui_theme).
+    - Inputs: initData, preference payload
+    - Outputs: stored preferences
+    - UC: UC-09
+  - Read/write session language mode for active session(s).
+    - Inputs: session id, language mode
+    - Outputs: session language metadata
+    - UC: UC-09
+- Dependencies: User Store (Postgres), Session Store (Postgres).
+
 **Component: Session Orchestrator**
 - Purpose: Run Researcher/Subject loop and generate stream events.
 - Functions:
@@ -48,6 +73,10 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
     - Inputs: session context, interventions
     - Outputs: stream events, transcript records
     - UC: UC-02, UC-04
+  - Resolve session language mode and adapt Researcher/Subject prompts accordingly.
+    - Inputs: session language setting
+    - Outputs: localized prompts
+    - UC: UC-09
   - Apply guardrails, budget caps, and kill switch rules.
     - Inputs: telemetry + moderation signals
     - Outputs: pause/terminate events
@@ -161,6 +190,7 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
   - Emit JSON logs with session_id/user_id/event.
   - Track usage and budgets per session.
   - Provide log filters for auth failures, WS drops, model errors.
+  - Log subject response pipeline (prompt size, candidate counts, empty output detection).
 - Dependencies: Cloud Logging, OpenAI Tracing.
 
 ### 2.2 Functional Component Diagram
@@ -281,6 +311,8 @@ flowchart TB
 | telegram_username | TEXT | NULL | Username (not logged) |
 | consented_at | TIMESTAMP | NULL | Consent timestamp |
 | is_operator | BOOLEAN | NOT NULL DEFAULT false | Operator flag |
+| ui_locale | TEXT | NOT NULL DEFAULT 'en' | UI locale preference |
+| ui_theme | TEXT | NOT NULL DEFAULT 'light' | UI theme preference |
 | created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | Created |
 | updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | Updated |
 
@@ -296,6 +328,7 @@ flowchart TB
 | status | TEXT | NOT NULL | pending/running/paused/ended |
 | researcher_model | TEXT | NOT NULL | OpenAI model |
 | subject_model | TEXT | NOT NULL | Gemini model |
+| session_language | TEXT | NOT NULL DEFAULT 'en' | EN/RU session language |
 | created_at | TIMESTAMP | NOT NULL | Created |
 | started_at | TIMESTAMP | NULL | Started |
 | ended_at | TIMESTAMP | NULL | Ended |
@@ -457,7 +490,13 @@ sessions ||--o{ safety_events
 ```
 - Response:
 ```json
-{ "ok": true, "userId": "uuid", "consented": true }
+{
+  "ok": true,
+  "userId": "uuid",
+  "consented": true,
+  "isOperator": false,
+  "preferences": { "ui_locale": "en", "ui_theme": "light" }
+}
 ```
 
 **API: Admin Settings**
@@ -470,11 +509,37 @@ sessions ||--o{ safety_events
   "ok": true,
   "settings": { "token_saver_enabled": false, "updated_at": "..." },
   "model_versions": {
-    "researcher": "gpt-5-mini",
-    "subject": "gemini-3.0-pro",
-    "subject_fallback": "gemini-1.5-flash"
+    "researcher": "gpt-5.2-2025-12-11",
+    "subject": "gemini-3-pro-preview",
+    "subject_fallback": "gemini-flash-latest"
   }
 }
+```
+
+**API: User Preferences**
+- GET `/api/user/preferences`
+- POST `/api/user/preferences`
+- Purpose: read/update user UI preferences (language + theme).
+- Request:
+```json
+{ "initData": "string", "ui_locale": "en|ru", "ui_theme": "light|dark" }
+```
+- Response:
+```json
+{ "ok": true, "preferences": { "ui_locale": "en", "ui_theme": "light" } }
+```
+
+**API: Session Settings**
+- GET `/api/sessions/{id}/settings`
+- POST `/api/sessions/{id}/settings`
+- Purpose: read/update session language mode (EN/RU).
+- Request:
+```json
+{ "session_language": "en|ru", "initData": "string" }
+```
+- Response:
+```json
+{ "ok": true, "session_language": "en" }
 ```
 
 **API: Sessions**
@@ -546,12 +611,12 @@ sessions ||--o{ safety_events
 - Error handling: retries with exponential backoff; log status + payload.
 
 **OpenAI Responses API**
-- Researcher model `gpt-5` or `gpt-5-mini`.
+- Researcher model `gpt-5.2-2025-12-11`.
 - Structured outputs for tools and telemetry parsing.
 - Use `previous_response_id` for reasoning reuse.
 
 **Gemini API**
-- Subject model `gemini-3.0-pro` (configurable).
+- Subject model `gemini-3-pro-preview` (configurable).
 - Long-context enabled; optional context caching.
 - Optional breath self-report via strict JSON schema (no free text, no chain-of-thought).
 
@@ -623,14 +688,14 @@ sessions ||--o{ safety_events
 
 ### 9.3 Monitoring
 - Log-based alerts for auth failures, WS disconnect spikes, model errors.
-- Track session latency, token usage, and cost budgets per session.
+- Track session latency, token usage, request counts, and cost budgets per session.
 
 ## 10. Deployment
 
 ### 10.1 Environments
 - Dev: local Docker + local Postgres/Redis.
-- Staging: Cloud Run with `gpt-5-mini` + `gemini-3.0-flash`.
-- Prod: Cloud Run with `gpt-5` + `gemini-3.0-pro`.
+- Staging: Cloud Run with `gpt-5.2-2025-12-11` + `gemini-3-pro-preview`.
+- Prod: Cloud Run with `gpt-5.2-2025-12-11` + `gemini-3-pro-preview`.
 
 ### 10.2 CI/CD
 - GitHub Actions: lint/test → Playwright → build → deploy.
@@ -645,18 +710,20 @@ sessions ||--o{ safety_events
   - `GEMINI_FALLBACK_MODEL`
   - `SESSION_TOKEN_BUDGET`, `SESSION_BUDGET_SOFT`
   - `SESSION_COST_BUDGET`, `SESSION_COST_BUDGET_SOFT`, `OPENAI_COST_PER_1K_TOKENS`
+  - `SESSION_REQUEST_BUDGET`, `SESSION_REQUEST_BUDGET_SOFT`
   - `WORKER_TICK_SECONDS`
   - `STARS_STARGAZER`, `STARS_COSMIC_PATRON`, `STARS_UNIVERSAL_ARCHITECT`
   - `PUBLIC_CHANNEL_ID`, `ENABLE_PUBLIC_CHANNEL_POSTS`
-  - `ADMIN_TELEGRAM_IDS`
+  - `ADMIN_TELEGRAM_IDS` (IDs or usernames)
   - `RESEARCHER_MAX_OUTPUT_TOKENS`, `SUBJECT_MAX_OUTPUT_TOKENS`
   - `RESEARCHER_MAX_OUTPUT_CHARS`, `SUBJECT_MAX_OUTPUT_CHARS`
   - `RESEARCHER_MAX_OUTPUT_TOKENS_SAVER`, `SUBJECT_MAX_OUTPUT_TOKENS_SAVER`
   - `RESEARCHER_MAX_OUTPUT_CHARS_SAVER`, `SUBJECT_MAX_OUTPUT_CHARS_SAVER`
 
 ### 10.4 Deployment Notes
-- Cloud Run web service: public, concurrency >1.
-- Cloud Run worker service: concurrency=1.
+- Cloud Run web service: public, concurrency >1, `SERVICE_ROLE=web`.
+- Cloud Run worker service: concurrency=1, `SERVICE_ROLE=worker`, `WORKER_HTTP_ENABLED=true`,
+  and `STREAM_PUBLISH_URL`/`SETTINGS_API_BASE` pointing at the web service.
 - Min/max instances explicitly set; VPC connector if using private Redis.
 
 ## 11. Open Questions

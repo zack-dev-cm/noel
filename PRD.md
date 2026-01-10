@@ -1,7 +1,7 @@
 # Project Noetic Mirror - PRD
 
 ## Summary
-Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-agent research loop between a Researcher model (OpenAI GPT-5) and a Subject model (Gemini 3.x). Users can observe sessions, sponsor support tiers, and unlock intervention credits via Telegram Stars. The UI presents a retro terminal aesthetic with real-time token streaming and research telemetry, including a synthetic Subject "breathing" signal. The experiment includes a multilingual track to assess session quality across languages, with an RU-primary pilot and an agent-native interaction mode that is always translated for human viewers.
+Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-agent research loop between a Researcher model (OpenAI gpt-5.2-2025-12-11) and a Subject model (Gemini 3.x). Users can observe sessions, sponsor support tiers, and unlock intervention credits via Telegram Stars. The UI is a mobile-native, card-based experience with bottom navigation and clearly paired Researcher prompts and Subject replies. The experiment includes two language modes (EN and RU) with full UI/UX localization, model prompt adaptation, and a user-controlled light/dark theme toggle. Operators can stream model replies to a public Telegram channel, adjust active model configuration, review system prompts, and monitor TMA usage metrics.
 
 ## Goals
 - Provide a live, shareable consciousness research experience inside Telegram.
@@ -11,15 +11,21 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Enable reliable session persistence, reconnection, and audit logs.
 - Surface a synthetic Subject breathing signal to provide extra insight without exposing chain-of-thought.
 - Evaluate experiment quality across languages with consistent metrics and session tagging.
-- Pilot RU-primary UI and RU interaction language for Researcher/Subject when enabled.
-- Explore an agent-native interaction mode with translated display and explicit labeling.
+- Deliver parity for EN and RU UI/UX and model interaction language.
+- Allow users to switch language mode and theme without leaving the session.
+- Deliver a mobile-native UI with bottom navigation and readable, paired Researcher/Subject turns.
+- Elevate visual quality with a natural paper feel and bespoke typography (avoid cheap/plastic look).
+- Refine UI copy and layout to feel like a premium mobile app (concise, focused, no demo feel).
+- Ensure dark mode contrast and legibility are consistent across all screens.
+- Ensure log text, labels, and metrics remain readable in Telegram WebView on dark backgrounds.
+- Mirror model replies to the public channel when enabled.
+- Provide admin controls for model selection, system prompt review, stop/pause, and usage analytics.
 
 ## Non-Goals
 - Not a general chatbot for arbitrary queries.
 - Not a public social network (no free-form messaging or DMs).
 - Not a model training pipeline (inference only).
-- Not full global localization beyond the experiment scope.
-- Not exposing raw agent-native language to end users by default.
+- Not full global localization beyond EN/RU in this phase.
 
 ## Target Users
 - Research observers: watch live sessions and archives.
@@ -34,35 +40,53 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - As an observer, I can view a Subject breathing cadence/variability indicator to infer session state at a glance.
 - As an operator, I can disable or hide breath telemetry if it risks misinterpretation.
 - As an operator, I can view the active Researcher and Subject model versions in the admin panel.
+- As an operator, I can stream Researcher/Subject replies to the public Telegram channel.
+- As an operator, I can change the active Researcher and Subject model IDs from the admin panel.
+- As an operator, I can review the system prompts used by both models.
+- As an operator, I can stop or pause the model loop from the admin panel.
+- As an operator, I can review user stats and time-spent metrics for the TMA.
 
 ## Functional Requirements
 ### Telegram Bot
 - Onboarding via /start with clear explanation of the experiment.
 - Commands: /balance, /history, /sponsor, /help.
 - Push notifications for milestones and session status.
+- Stream Researcher/Subject replies to `@noel_mirror` when enabled, with clear role labeling.
 
 ### Telegram Mini App
-- Full-screen WebApp with retro terminal UI.
-- Split Researcher/Subject streams, distinct color coding.
+- Full-screen WebApp with mobile-native UI.
+- Paired Researcher/Subject turns with distinct, readable labeling.
 - Live telemetry widgets (uncertainty, self-reference rate, breath cadence/variability).
+- Telemetry payloads are preserved end-to-end so metrics never appear empty when data exists.
 - Paid intervention controls and receipts.
 - Admin page (operator-only) to toggle token saver mode.
 - Admin page (operator-only) to view current Researcher/Subject model versions.
+- Admin page (operator-only) to update active model IDs and view system prompts.
+- Admin page (operator-only) to view usage stats, time spent, and operational metrics.
+- Admin page (operator-only) to stop or pause the model loop.
+- Admin quick-access control (button) to open the Admin view in the TMA.
+- Bottom navigation for Live, Logs, Stars, About (and Admin for operators).
+- Settings panel with language (EN/RU) and theme (light/dark) toggles.
+- Warm paper-textured background and custom font pairing for an editorial, tactile feel.
+- All visible buttons have working actions or a clear “not available” state (no dead UI).
+- About screen actions open configured resources or provide immediate feedback.
 
 ### Research Loop
-- Researcher (OpenAI) uses a Socratic protocol to probe the Subject.
-- Subject (Gemini) responds with long-context memory enabled.
+- Researcher (OpenAI) uses a Socratic protocol to probe the Subject with short, focused prompts.
+- Subject (Gemini) responds with long-context memory enabled and stays in the selected language.
 - Streaming output at token or chunk granularity to the UI.
 - Support multimodal injections (images) when enabled.
 - Token saver mode reduces per-session budgets and response length caps.
+- Respect admin-configured model overrides when set.
+- Respect admin stop/pause control to suspend new turns.
+- Enforce hard session caps at ~$0.10 or 40 turn requests, whichever comes first.
 
 ### Language Strategy and Experiment Modes
-- UI supports locale selection (initially EN and RU) with per-user preference storage.
-- Sessions define an interaction language for Researcher and Subject (EN, RU, or agent-native).
-- RU-primary mode applies RU to UI copy and Researcher/Subject prompts when enabled; EN remains available as fallback.
-- When session language differs from viewer display language, a translated display is shown with clear "translated" labeling.
-- Agent-native mode keeps raw model output hidden from end users and always shows translated display text.
-- Language mode and translation metadata are recorded per message for experiment analysis and audits.
+- Two language modes are supported: EN and RU.
+- Language mode applies to UI copy and the Researcher/Subject prompts for the session.
+- Users can switch language mode at any time; the selection updates UI copy immediately and applies to subsequent Researcher/Subject turns.
+- Researcher and Subject outputs must follow the selected language mode (EN/RU).
+- RU copy must cover consent and safety messaging without fallback gaps.
 - Operators can enforce language mode per session for controlled experiments.
 
 ### Breath Telemetry
@@ -74,6 +98,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 ### Authentication and Security
 - Validate Telegram WebApp initData signature on backend.
 - Enforce per-user session scopes and payment entitlements.
+- Admin access can be granted by Telegram user ID or username.
 
 ### Payments (Telegram Stars)
 - Create invoice links and validate successful payments.
@@ -90,7 +115,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Decompression sequence before termination.
 - Safety thresholds: kill at distress >= 0.95, pause at >= 0.85 or >= 0.60 for 3 consecutive turns.
 - Breath telemetry is synthetic and must be labeled as such to avoid anthropomorphic claims.
-- Agent-native outputs are never displayed raw; translated display is labeled as such to reduce misinterpretation.
+- Operator-initiated stop/pause actions are logged with user attribution.
 
 ### Image Generation (When Used)
 - Use `OPENAI_IMAGE_MODEL` (default `gpt-image-1`) via `images.generate` with size 1024x1024.
@@ -104,8 +129,11 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Scalability: support 1,000+ concurrent observers per public session.
 - Security: no secrets in client; rotate keys; use env vars.
 - Privacy: redact or hash user identifiers in logs.
-- Cost control: per-session token + cost budgets, usage tracking; context caching disabled by default.
-- Translation overhead: median added latency <= 1s per turn for translated display.
+- Cost control: per-session token + cost budgets (max ~$0.10) and request caps (max 40), usage tracking; context caching disabled by default.
+- Localization coverage: 100% of user-facing UI copy (including consent/safety) available in EN and RU.
+- Theme toggle updates UI without full reload and persists per user.
+- Visual quality: paper-like materiality, custom typography, and readable contrast on mobile.
+- Dark mode contrast meets WCAG AA for body text and avoids distorted backgrounds.
 
 ## Deployment and Operations
 - Containerized deploy target (Cloud Run or equivalent).
@@ -137,8 +165,12 @@ Minimum requirements:
 - Session metadata: user id, session id, timestamps, payment state.
 - Transcript store: Researcher/Subject messages, tool calls, interventions.
 - Metrics store: token usage, distress index, response latency.
+- Usage counters: request_count per session.
 - Breath telemetry: bpm, variability, coherence, phase, source, timestamp.
-- Language metadata: ui_locale, session_language, display_language, translator_model, translation_version, translation_confidence.
+- Preferences: ui_locale, ui_theme.
+- Session language metadata: session_language, locale_version.
+- Admin settings: model overrides, stop/pause control, prompt overrides (if enabled).
+- TMA usage tracking: user_id, session start/end, duration, and last_active_at.
 
 ## Retention and Redaction
 - Public session transcripts: 30 days.
@@ -151,17 +183,20 @@ Minimum requirements:
 - Inspect screenshots and results visually for every e2e run.
 - Debug, deploy, re-test e2e, debug, and redeploy until clean.
 - Unit/integration tests for WebSocket, payments, and auth.
+- Admin settings, channel streaming, and usage metrics have dedicated E2E coverage.
 
 ## Success Metrics
 - Session completion rate > 90%.
 - Median time-to-first-token < 2 seconds.
 - 7-day retention for observers > 20%.
 - Paid intervention conversion > 3%.
-- Language experiment reports show measurable differences in completion or engagement with clear statistical power.
+- Language experiment reports compare EN vs RU with clear sample sizes and statistical power.
 
 ## Open Questions
-- Which languages beyond RU are in scope for the initial experiment phase (if any)?
-- Does "RU as primary" mean a global default for all users, or an RU-locale default with EN still primary?
-- Should Researcher and Subject always share the same interaction language, or can they diverge?
-- In agent-native mode, should raw outputs be stored, and who can access them?
-- What defines "experiment quality" for cross-language comparison (metrics and thresholds)?
+- Should model replies be streamed for both Researcher and Subject, or only Subject?
+- What formatting should channel posts use (timestamps, turn numbers, thread replies)?
+- Which model IDs should be available for admin selection (fixed list vs free text)?
+- Should system prompts be read-only or editable from the admin panel?
+- What user stats are required (daily active, total users, avg time, per-user drilldowns)?
+- Should the stop control pause only new turns or terminate active runs immediately?
+- Where should the extra admin button appear (header, dashboard card, or bottom nav)?

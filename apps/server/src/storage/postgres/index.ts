@@ -20,13 +20,15 @@ export function createPostgresRepositories(databaseUrl: string): StorageReposito
       },
       async createUser(record: UserRecord) {
         await pool.query(
-          'INSERT INTO users (id, telegram_id, telegram_username, consented_at, is_operator, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+          'INSERT INTO users (id, telegram_id, telegram_username, consented_at, is_operator, ui_locale, ui_theme, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
           [
             record.id,
             record.telegram_id,
             record.telegram_username,
             record.consented_at,
             record.is_operator,
+            record.ui_locale,
+            record.ui_theme,
             record.created_at,
             record.updated_at
           ]
@@ -38,12 +40,29 @@ export function createPostgresRepositories(databaseUrl: string): StorageReposito
           consentedAt,
           userId
         ]);
+      },
+      async updatePreferences(
+        userId: string,
+        input: { ui_locale?: UserRecord['ui_locale']; ui_theme?: UserRecord['ui_theme'] }
+      ) {
+        const current = await pool.query('SELECT * FROM users WHERE id = $1 LIMIT 1', [userId]);
+        const record = current.rows[0] as UserRecord | undefined;
+        if (!record) {
+          throw new Error('user_not_found');
+        }
+        const nextLocale = input.ui_locale ?? record.ui_locale;
+        const nextTheme = input.ui_theme ?? record.ui_theme;
+        const result = await pool.query(
+          'UPDATE users SET ui_locale = $1, ui_theme = $2, updated_at = NOW() WHERE id = $3 RETURNING *',
+          [nextLocale, nextTheme, userId]
+        );
+        return result.rows[0] as UserRecord;
       }
     },
     sessions: {
       async createSession(record: SessionRecord) {
         await pool.query(
-          'INSERT INTO sessions (id, user_id, type, status, researcher_model, subject_model, created_at, started_at, ended_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+          'INSERT INTO sessions (id, user_id, type, status, researcher_model, subject_model, session_language, created_at, started_at, ended_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
           [
             record.id,
             record.user_id,
@@ -51,6 +70,7 @@ export function createPostgresRepositories(databaseUrl: string): StorageReposito
             record.status,
             record.researcher_model,
             record.subject_model,
+            record.session_language,
             record.created_at,
             record.started_at,
             record.ended_at
@@ -64,6 +84,16 @@ export function createPostgresRepositories(databaseUrl: string): StorageReposito
       async getSession(sessionId: string) {
         const result = await pool.query('SELECT * FROM sessions WHERE id = $1 LIMIT 1', [sessionId]);
         return (result.rows[0] as SessionRecord) ?? null;
+      },
+      async updateSessionLanguage(sessionId: string, session_language: SessionRecord['session_language']) {
+        const result = await pool.query(
+          'UPDATE sessions SET session_language = $1 WHERE id = $2 RETURNING *',
+          [session_language, sessionId]
+        );
+        if (!result.rows[0]) {
+          throw new Error('session_not_found');
+        }
+        return result.rows[0] as SessionRecord;
       }
     },
     transcripts: {

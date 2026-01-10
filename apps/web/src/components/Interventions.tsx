@@ -1,25 +1,27 @@
-import { useState } from 'react';
-
-const presets = [
-  'Inject a logical paradox about self-observation.',
-  'Ask the Subject to define its memory boundaries.',
-  'Challenge the Subject with a counterfactual scenario.'
-];
+import { useEffect, useState } from 'react';
+import type { Copy } from '../i18n';
 
 interface InterventionsProps {
   apiBase: string;
   sessionId: string;
   userId: string | null;
+  copy: Copy['interventions'];
 }
 
-export default function Interventions({ apiBase, sessionId, userId }: InterventionsProps) {
-  const [prompt, setPrompt] = useState(presets[0]);
+export default function Interventions({ apiBase, sessionId, userId, copy }: InterventionsProps) {
+  const [prompt, setPrompt] = useState(copy.presets[0]);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (!copy.presets.includes(prompt)) {
+      setPrompt(copy.presets[0]);
+    }
+  }, [copy.presets, prompt]);
+
   const submit = async () => {
     if (!userId) {
-      setStatus('Auth required.');
+      setStatus(copy.authRequired);
       return;
     }
     setLoading(true);
@@ -31,12 +33,12 @@ export default function Interventions({ apiBase, sessionId, userId }: Interventi
         body: JSON.stringify({ sessionId, userId, prompt })
       });
       if (!response.ok) {
-        setStatus('Intervention blocked.');
+        setStatus(copy.blocked);
         return;
       }
-      setStatus('Intervention queued.');
+      setStatus(copy.queued);
     } catch {
-      setStatus('Failed to queue intervention.');
+      setStatus(copy.failed);
     } finally {
       setLoading(false);
     }
@@ -46,16 +48,16 @@ export default function Interventions({ apiBase, sessionId, userId }: Interventi
     <div className="panel p-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase text-white/60">Interventions</p>
-          <h3 className="mt-1 text-sm font-semibold">Prompt injection</h3>
+          <p className="text-xs uppercase text-slate-500">{copy.title}</p>
+          <h3 className="mt-1 text-sm font-semibold">{copy.subtitle}</h3>
         </div>
-        <span className="chip">Requires Stars</span>
+        <span className="chip">{copy.requiresStars}</span>
       </div>
-      <p className="mt-2 text-xs text-white/60">
-        Select a preset or refine the prompt to steer the next turn.
+      <p className="mt-2 text-xs text-slate-600">
+        {copy.guidance}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
-        {presets.map((item) => (
+        {copy.presets.map((item) => (
           <button
             key={item}
             type="button"
@@ -73,13 +75,14 @@ export default function Interventions({ apiBase, sessionId, userId }: Interventi
         onChange={(event) => setPrompt(event.target.value)}
       />
       <button
-        className="mt-3 w-full rounded-xl border border-neon/40 bg-neon/10 py-2 text-sm text-neon"
+        className="button-primary mt-3 w-full"
+        type="button"
         onClick={submit}
         disabled={loading}
       >
-        {loading ? 'Queueing...' : 'Inject Intervention'}
+        {loading ? copy.queueing : copy.submit}
       </button>
-      {status && <p className="mt-2 text-xs text-white/60">{status}</p>}
+      {status && <p className="mt-2 text-xs text-slate-600">{status}</p>}
     </div>
   );
 }

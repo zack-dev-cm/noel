@@ -3,7 +3,7 @@
 ## Current GCP Target
 - Project: `energy-meters`
 - Region: `us-east1`
-- Cloud Run service: `noetic-mirror-web` (single service runs UI + API + worker loop)
+- Cloud Run services: `noetic-mirror-web` (UI + API) and `noetic-mirror-worker` (research loop)
 - Web URL: `https://noetic-mirror-web-zlvmfsrm6a-ue.a.run.app`
 - Telegram WebApp: `https://t.me/noetic_mirror_bot/app`
 - Cloud SQL: `energy-meters:us-east1:bvis-postgres` (db: `noetic_mirror`, user: `noetic_user`)
@@ -29,27 +29,33 @@
 - INIT_DATA_MAX_AGE_SECONDS (default: 86400)
 - WEB_APP_URL (Mini App base URL for deep links)
 - LOG_LEVEL (info|debug)
-- SERVICE_ROLE (default: web; set to all to run worker loop)
-- WORKER_HTTP_ENABLED (default: false for single service)
-- ADMIN_TELEGRAM_IDS (comma-separated Telegram user IDs allowed for admin access)
-- OPENAI_RESEARCHER_MODEL (default: gpt-5-mini in dev, gpt-5 in prod)
-- GEMINI_MODEL (default: gemini-3.0-pro)
-- GEMINI_FALLBACK_MODEL (default: gemini-1.5-flash)
+- SERVICE_ROLE (web|worker|all; default: web)
+- WORKER_HTTP_ENABLED (default: true for worker)
+- SESSION_ID (default: public for worker)
+- ADMIN_TELEGRAM_IDS (comma-separated Telegram user IDs or usernames allowed for admin access)
+- OPENAI_RESEARCHER_MODEL (default: gpt-5.2-2025-12-11)
+- GEMINI_MODEL (default: gemini-3-pro-preview)
+- GEMINI_FALLBACK_MODEL (default: gemini-flash-latest)
 - SESSION_TOKEN_BUDGET (default: 100000)
 - SESSION_BUDGET_SOFT (default: 80000)
-- SESSION_COST_BUDGET (default: 3.0)
-- SESSION_COST_BUDGET_SOFT (default: 2.4)
+- SESSION_COST_BUDGET (default: 0.1)
+- SESSION_COST_BUDGET_SOFT (default: 0.08)
+- SESSION_REQUEST_BUDGET (default: 40)
+- SESSION_REQUEST_BUDGET_SOFT (default: 32)
 - OPENAI_COST_PER_1K_TOKENS (set per model pricing)
 - WORKER_TICK_SECONDS (default: 30)
 - TOKEN_SAVER_MULTIPLIER (default: 0.6)
-- RESEARCHER_MAX_OUTPUT_TOKENS (default: 240)
-- SUBJECT_MAX_OUTPUT_TOKENS (default: 280)
-- RESEARCHER_MAX_OUTPUT_CHARS (default: 1200)
-- SUBJECT_MAX_OUTPUT_CHARS (default: 1400)
-- RESEARCHER_MAX_OUTPUT_TOKENS_SAVER (default: 160)
-- SUBJECT_MAX_OUTPUT_TOKENS_SAVER (default: 200)
-- RESEARCHER_MAX_OUTPUT_CHARS_SAVER (default: 800)
-- SUBJECT_MAX_OUTPUT_CHARS_SAVER (default: 1000)
+- DEFAULT_SESSION_LANGUAGE (default: en; en|ru)
+- INITIAL_PROMPT_RU (optional RU override for initial prompt)
+- PUBLIC_SESSION_UUID (optional; UUID used for public session storage)
+- RESEARCHER_MAX_OUTPUT_TOKENS (default: 160)
+- SUBJECT_MAX_OUTPUT_TOKENS (default: 220)
+- RESEARCHER_MAX_OUTPUT_CHARS (default: 720)
+- SUBJECT_MAX_OUTPUT_CHARS (default: 1000)
+- RESEARCHER_MAX_OUTPUT_TOKENS_SAVER (default: 120)
+- SUBJECT_MAX_OUTPUT_TOKENS_SAVER (default: 160)
+- RESEARCHER_MAX_OUTPUT_CHARS_SAVER (default: 520)
+- SUBJECT_MAX_OUTPUT_CHARS_SAVER (default: 700)
 - STREAM_PUBLISH_TOKEN (worker -> web internal auth)
 - PUBLIC_CHANNEL_ID (default: @noel_mirror)
 - ENABLE_PUBLIC_CHANNEL_POSTS (true|false)
@@ -73,12 +79,13 @@ PROJECT_ID=<PROJECT_ID> REGION=<REGION> WEB_APP_URL=<WEB_APP_URL> \
 PROJECT_ID=<PROJECT_ID>
 REGION=<REGION>
 SERVICE=noetic-mirror-web
+WORKER_SERVICE=noetic-mirror-worker
 IMAGE=gcr.io/$PROJECT_ID/noetic-mirror:latest
 
 PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
   gcloud builds submit --project "$PROJECT_ID" --tag "$IMAGE"
 
-# Deploy Cloud Run (single service)
+# Deploy Cloud Run (web service)
 PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
   gcloud run deploy "$SERVICE" \
   --project "$PROJECT_ID" --region "$REGION" \
@@ -88,8 +95,21 @@ PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
   --add-cloudsql-instances <CLOUDSQL_INSTANCE> \
   --vpc-connector <VPC_CONNECTOR> --vpc-egress private-ranges-only \
   --set-secrets OPENAI_API_KEY=<SECRET_NAME>:latest,GEMINI_API_KEY=<SECRET_NAME>:latest,TELEGRAM_BOT_TOKEN=<SECRET_NAME>:latest,DATABASE_URL=<SECRET_NAME>:latest,REDIS_URL=<SECRET_NAME>:latest,STREAM_PUBLISH_TOKEN=<SECRET_NAME>:latest,WEBHOOK_SECRET=<SECRET_NAME>:latest \
-  --set-env-vars ENV=prod,SERVICE_ROLE=all,WORKER_HTTP_ENABLED=false,INIT_DATA_MAX_AGE_SECONDS=86400,WEB_APP_URL=<WEB_APP_URL>,WEBHOOK_BASE_URL=<WEB_APP_URL>,STREAM_PUBLISH_URL=<WEB_APP_URL>,INTERVENTION_API_BASE=<WEB_APP_URL> \
+  --set-env-vars ENV=prod,SERVICE_ROLE=web,WORKER_HTTP_ENABLED=false,INIT_DATA_MAX_AGE_SECONDS=86400,WEB_APP_URL=<WEB_APP_URL>,WEBHOOK_BASE_URL=<WEB_APP_URL>,STREAM_PUBLISH_URL=<WEB_APP_URL>,INTERVENTION_API_BASE=<WEB_APP_URL>,SETTINGS_API_BASE=<WEB_APP_URL> \
   --cpu 2 --memory 2Gi --concurrency 10 --min-instances 1 --max-instances 3 --no-cpu-throttling
+
+# Deploy Cloud Run (worker service)
+PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
+  gcloud run deploy "$WORKER_SERVICE" \
+  --project "$PROJECT_ID" --region "$REGION" \
+  --image "$IMAGE" \
+  --platform managed --allow-unauthenticated \
+  --service-account <SERVICE_ACCOUNT> \
+  --add-cloudsql-instances <CLOUDSQL_INSTANCE> \
+  --vpc-connector <VPC_CONNECTOR> --vpc-egress private-ranges-only \
+  --set-secrets OPENAI_API_KEY=<SECRET_NAME>:latest,GEMINI_API_KEY=<SECRET_NAME>:latest,TELEGRAM_BOT_TOKEN=<SECRET_NAME>:latest,DATABASE_URL=<SECRET_NAME>:latest,REDIS_URL=<SECRET_NAME>:latest,STREAM_PUBLISH_TOKEN=<SECRET_NAME>:latest,WEBHOOK_SECRET=<SECRET_NAME>:latest \
+  --set-env-vars ENV=prod,SERVICE_ROLE=worker,WORKER_HTTP_ENABLED=true,SESSION_ID=public,INIT_DATA_MAX_AGE_SECONDS=86400,WEB_APP_URL=<WEB_APP_URL>,WEBHOOK_BASE_URL=<WEB_APP_URL>,STREAM_PUBLISH_URL=<WEB_APP_URL>,INTERVENTION_API_BASE=<WEB_APP_URL>,SETTINGS_API_BASE=<WEB_APP_URL> \
+  --cpu 2 --memory 2Gi --concurrency 1 --min-instances 1 --max-instances 1 --no-cpu-throttling
 ```
 
 ## Post-Deploy Checks
@@ -102,8 +122,8 @@ PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
   - `gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=<SERVICE>" --project <PROJECT_ID> --limit 100`
 
 ## Stop/Resume Research Loop
-- Stop: set `SERVICE_ROLE=web` (worker loop disabled).
-- Resume: set `SERVICE_ROLE=all`.
+- Stop: scale `noetic-mirror-worker` to 0 or set `min-instances=0`.
+- Resume: scale `noetic-mirror-worker` back to 1 (or redeploy).
 
 ## Rollback
 ```bash

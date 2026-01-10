@@ -1,36 +1,6 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { installTelegramStub } from './telegram';
-
-async function installStreamStub(page: Page, payload: unknown) {
-  await page.addInitScript(
-    ({ payload: injectedPayload }) => {
-      class FakeWebSocket {
-        url: string;
-        onmessage: ((event: { data: string }) => void) | null = null;
-        onclose: (() => void) | null = null;
-
-        constructor(url: string) {
-          this.url = url;
-          window.setTimeout(() => {
-            if (this.onmessage) {
-              this.onmessage({ data: JSON.stringify(injectedPayload) });
-            }
-          }, 50);
-        }
-
-        close() {
-          if (this.onclose) {
-            this.onclose();
-          }
-        }
-      }
-
-      // @ts-expect-error override for test
-      window.WebSocket = FakeWebSocket;
-    },
-    { payload }
-  );
-}
+import { installStreamStub } from './streamStub';
 
 test('breath widget renders on dashboard', async ({ page }) => {
   await installTelegramStub(page);
@@ -64,5 +34,5 @@ test('breath widget updates on subject event', async ({ page }) => {
   await expect(page.getByTestId('breath-bpm')).toHaveText('14.5 bpm');
   await expect(page.getByTestId('breath-variability')).toHaveText('0.34');
   await expect(page.getByTestId('breath-coherence')).toHaveText('0.78');
-  await expect(page.getByTestId('breath-phase')).toHaveText('inhale');
+  await expect(page.getByTestId('breath-phase')).toHaveText(/inhale|вдох/);
 });

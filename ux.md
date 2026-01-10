@@ -199,7 +199,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Initialize Models
 const researcher = new OpenAI({ apiKey: process.env.OPENAI_KEY }); // GPT-5.2
-const subject = new GoogleGenerativeAI(process.env.GEMINI_KEY).getGenerativeModel({ model: "gemini-3.0-pro" });
+const subject = new GoogleGenerativeAI(process.env.GEMINI_KEY).getGenerativeModel({ model: "gemini-3-pro-preview" });
 
 const wss = new WebSocket.Server({ port: 8080 });
 

@@ -1,4 +1,5 @@
 import type { StreamEvent } from '@noetic/shared';
+import { logEvent } from '../observability/logger.js';
 
 export interface StreamPublisher {
   publish(sessionId: string, event: StreamEvent): Promise<void>;
@@ -8,14 +9,26 @@ class HttpStreamPublisher implements StreamPublisher {
   constructor(private baseUrl: string, private token?: string) {}
 
   async publish(sessionId: string, event: StreamEvent): Promise<void> {
-    await fetch(`${this.baseUrl}/api/stream/publish`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(this.token ? { 'x-stream-token': this.token } : {})
-      },
-      body: JSON.stringify({ sessionId, event })
-    });
+    try {
+      const response = await fetch(`${this.baseUrl}/api/stream/publish`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.token ? { 'x-stream-token': this.token } : {})
+        },
+        body: JSON.stringify({ sessionId, event })
+      });
+      if (!response.ok) {
+        logEvent('stream_publish_failed', {
+          session_id: sessionId,
+          status: response.status,
+          role: event.role
+        }, 'warn');
+      }
+    } catch (error) {
+      logEvent('stream_publish_error', { session_id: sessionId, role: event.role, error: String(error) }, 'error');
+      throw error;
+    }
   }
 }
 

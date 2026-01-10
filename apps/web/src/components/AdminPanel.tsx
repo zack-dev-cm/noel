@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { getTelegramInitData } from '../hooks/useTelegram';
+import type { Copy } from '../i18n';
 
 interface AdminPanelProps {
   apiBase: string;
   initData: string;
+  copy: Copy['admin'];
 }
 
 type AdminSettings = {
@@ -17,7 +19,7 @@ type ModelVersions = {
   subject_fallback?: string;
 };
 
-export default function AdminPanel({ apiBase, initData }: AdminPanelProps) {
+export default function AdminPanel({ apiBase, initData, copy }: AdminPanelProps) {
   const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [modelVersions, setModelVersions] = useState<ModelVersions | null>(null);
   const [status, setStatus] = useState('');
@@ -54,7 +56,7 @@ export default function AdminPanel({ apiBase, initData }: AdminPanelProps) {
 
   const toggleSaver = async () => {
     if (!resolvedInitData || !settings) {
-      setStatus('Missing admin auth.');
+      setStatus(copy.missingAuth);
       return;
     }
     setLoading(true);
@@ -71,13 +73,13 @@ export default function AdminPanel({ apiBase, initData }: AdminPanelProps) {
       const payload = (await response.json()) as { settings?: AdminSettings; model_versions?: ModelVersions };
       if (payload.settings) {
         setSettings(payload.settings);
-        setStatus(payload.settings.token_saver_enabled ? 'Token saver enabled.' : 'Token saver disabled.');
+        setStatus(payload.settings.token_saver_enabled ? copy.enabled : copy.disabled);
       }
       if (payload.model_versions) {
         setModelVersions(payload.model_versions);
       }
     } catch {
-      setStatus('Unable to update settings.');
+      setStatus(copy.updateFailed);
     } finally {
       setLoading(false);
     }
@@ -87,55 +89,55 @@ export default function AdminPanel({ apiBase, initData }: AdminPanelProps) {
     <div className="panel p-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase text-white/60">Admin controls</p>
-          <h3 className="mt-1 text-lg font-semibold">Token saver mode</h3>
+          <p className="text-xs uppercase text-slate-500">{copy.title}</p>
+          <h3 className="mt-1 text-lg font-semibold">{copy.subtitle}</h3>
         </div>
         <button
+          type="button"
           className={`toggle ${settings?.token_saver_enabled ? 'toggle--active' : ''}`}
           onClick={toggleSaver}
           disabled={loading || !settings}
           aria-pressed={settings?.token_saver_enabled}
         >
           <span className="toggle-dot" />
-          {settings?.token_saver_enabled ? 'On' : 'Off'}
+          {settings?.token_saver_enabled ? copy.toggleOn : copy.toggleOff}
         </button>
       </div>
-      <p className="mt-3 text-sm text-white/70">
-        Reduces per-session budgets and caps response length to keep costs predictable while preserving
-        signal quality.
+      <p className="mt-3 text-sm text-slate-600">
+        {copy.description}
       </p>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <div className="panel panel-subtle p-3">
-          <p className="text-xs uppercase text-white/50">Active caps</p>
-          <p className="mt-1 text-sm text-white/70">Researcher: ~240 tokens · Subject: ~280 tokens</p>
+          <p className="text-xs uppercase text-slate-500">{copy.activeCapsTitle}</p>
+          <p className="mt-1 text-sm text-slate-600">{copy.activeCapsBody}</p>
         </div>
         <div className="panel panel-subtle p-3">
-          <p className="text-xs uppercase text-white/50">Saver caps</p>
-          <p className="mt-1 text-sm text-white/70">Researcher: ~160 tokens · Subject: ~200 tokens</p>
+          <p className="text-xs uppercase text-slate-500">{copy.saverCapsTitle}</p>
+          <p className="mt-1 text-sm text-slate-600">{copy.saverCapsBody}</p>
         </div>
       </div>
       {modelVersions && (
         <div className="mt-4 panel panel-subtle p-3">
-          <p className="text-xs uppercase text-white/50">Model versions</p>
-          <div className="mt-2 grid gap-2 text-sm text-white/70">
+          <p className="text-xs uppercase text-slate-500">{copy.modelVersions}</p>
+          <div className="mt-2 grid gap-2 text-sm text-slate-600">
             <div className="flex items-center justify-between">
-              <span>Researcher</span>
-              <span className="font-mono text-white/80">{modelVersions.researcher}</span>
+              <span>{copy.researcher}</span>
+              <span className="font-mono text-slate-700">{modelVersions.researcher}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span>Subject</span>
-              <span className="font-mono text-white/80">{modelVersions.subject}</span>
+              <span>{copy.subject}</span>
+              <span className="font-mono text-slate-700">{modelVersions.subject}</span>
             </div>
             {modelVersions.subject_fallback && (
               <div className="flex items-center justify-between">
-                <span>Subject fallback</span>
-                <span className="font-mono text-white/80">{modelVersions.subject_fallback}</span>
+                <span>{copy.subjectFallback}</span>
+                <span className="font-mono text-slate-700">{modelVersions.subject_fallback}</span>
               </div>
             )}
           </div>
         </div>
       )}
-      {status && <p className="mt-3 text-xs text-white/60">{status}</p>}
+      {status && <p className="mt-3 text-xs text-slate-600">{status}</p>}
     </div>
   );
 }

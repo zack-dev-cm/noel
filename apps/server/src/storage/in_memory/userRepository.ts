@@ -25,4 +25,21 @@ export class InMemoryUserRepository implements UserRepository {
     }
     this.store.users.set(userId, { ...user, consented_at: consentedAt });
   }
+
+  async updatePreferences(
+    userId: string,
+    input: { ui_locale?: UserRecord['ui_locale']; ui_theme?: UserRecord['ui_theme'] }
+  ): Promise<UserRecord> {
+    const user = this.store.users.get(userId);
+    if (!user) {
+      throw new Error('user_not_found');
+    }
+    const updated: UserRecord = {
+      ...user,
+      ui_locale: input.ui_locale ?? user.ui_locale,
+      ui_theme: input.ui_theme ?? user.ui_theme
+    };
+    this.store.users.set(userId, updated);
+    return updated;
+  }
 }

@@ -28,9 +28,9 @@ test('shows model versions in admin panel', async ({ page }) => {
         ok: true,
         settings: { token_saver_enabled: false, updated_at: '2025-01-01T00:00:00Z' },
         model_versions: {
-          researcher: 'gpt-5-mini',
-          subject: 'gemini-3.0-pro',
-          subject_fallback: 'gemini-1.5-flash'
+          researcher: 'gpt-5.2-2025-12-11',
+          subject: 'gemini-3-pro-preview',
+          subject_fallback: 'gemini-flash-latest'
         }
       })
     });
@@ -40,7 +40,7 @@ test('shows model versions in admin panel', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Admin' })).toBeVisible();
   await page.getByRole('button', { name: 'Admin' }).dispatchEvent('click');
   await expect(page.getByText('Model versions')).toBeVisible();
-  await expect(page.getByText('gpt-5-mini')).toBeVisible();
-  await expect(page.getByText('gemini-3.0-pro')).toBeVisible();
-  await expect(page.getByText('gemini-1.5-flash')).toBeVisible();
+  await expect(page.getByText('gpt-5.2-2025-12-11')).toBeVisible();
+  await expect(page.getByText('gemini-3-pro-preview')).toBeVisible();
+  await expect(page.getByText('gemini-flash-latest')).toBeVisible();
 });

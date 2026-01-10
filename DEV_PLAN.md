@@ -154,13 +154,13 @@ Acceptance:
 
 ### M9: UX Refresh + Output Controls
 Deliverables:
-- Updated UI/UX aligned to mocks with clearer process mapping and analysis view.
+- Updated UI/UX aligned to mobile-native layout with clearer turn pairing and analysis view.
 - Admin page for token saver mode.
 - Response length caps and prompt guidance to keep outputs concise.
 
 Tasks:
-- Redesign dashboard, logs, and stars layout to match the mock visual language.
-- Add exchange diagram and animated process map for readability.
+- Redesign dashboard, logs, and stars layout to mobile-native card UI with bottom navigation.
+- Render Researcher prompts and Subject replies as paired turns for readability.
 - Implement admin-only settings endpoint + UI toggle for token saver mode.
 - Enforce response caps via max output tokens/chars and concise prompts.
 
@@ -187,6 +187,97 @@ Tests:
 
 Acceptance:
 - Admin tab shows model versions that match server configuration.
+
+### M10: Language + Theme Toggles + Subject Debugging
+Deliverables:
+- EN/RU language mode with UI localization and prompt adaptation.
+- Light/dark theme toggle with persisted user preference.
+- Improved Subject pipeline logging and empty-response handling.
+- Updated runbooks with new log queries and env configuration.
+
+Tasks:
+- Add user preference storage (ui_locale, ui_theme) and session language metadata.
+- Implement preferences and session language APIs; return preferences on auth init.
+- Update worker to apply session language to Researcher/Subject prompts and log Gemini response details.
+- Add fallback handling for empty Subject replies with structured logging.
+- Update WebApp to localize copy, add language/theme toggles, and persist settings.
+
+Tests:
+- Unit/integration tests for preferences API and session language updates.
+- Worker unit tests for language prompt selection and empty response fallback.
+- Playwright E2E for language/theme toggle and Subject reply visibility.
+
+Acceptance:
+- Users can switch EN/RU and light/dark without full reload; preferences persist.
+- Researcher/Subject prompts respect session language on subsequent turns.
+- Logs show Subject response diagnostics (candidate counts, empty output events).
+
+### M11: Paper Materiality + Custom Typography
+Deliverables:
+- Paper-textured UI refresh with bespoke typography and warmer surfaces.
+
+Tasks:
+- Update `apps/web/src/index.css` with new font imports, typography tokens, and paper-like textures.
+- Adjust panel, chips, and tab bar surfaces to feel tactile instead of glassy.
+- Align Telegram header color with the new paper palette.
+
+Tests:
+- Playwright E2E (headed) with visual inspection of updated UI styling.
+
+Acceptance:
+- Custom font pairing is applied across headings and body text.
+- Background and panels read as natural paper with subtle texture.
+- Contrast and readability remain strong on mobile.
+
+### M12: Stream Reliability + Prompt/UI Polish
+Deliverables:
+- Subject replies appear in the TMA via an active worker loop.
+- Researcher/Subject prompts are concise, on-topic, and language-locked (EN/RU).
+- UI/UX feels mobile-native with functional actions, improved dark mode contrast, and refined RU copy.
+
+Tasks:
+- Deploy a dedicated worker service (Cloud Run) with concurrency=1 and correct stream settings.
+- Tighten Researcher/Subject system prompts and default initial prompt length; enforce output language.
+- Refactor WebApp layout/copy, remove demo-feel elements, and ensure all buttons provide feedback.
+- Rebalance dark mode palette and replace hard-coded slate colors with theme variables.
+
+Tests:
+- Playwright E2E for language, theme, and button actions (headed).
+- Playwright E2E in prod to confirm Subject replies render.
+- Regression `npm test` (worker + server).
+
+Acceptance:
+- Subject replies render in the UI during live sessions; logs show `subject_request`/`subject_response`.
+- Researcher output stays focused (1–2 short prompts) and in selected language.
+- Dark mode meets contrast requirements with no distorted textures.
+- All visible actions are interactive and provide feedback.
+
+### M13: Contrast + Telemetry + Admin Access + Budget Caps
+Deliverables:
+- Dark-mode text is legible in Telegram WebView across turn cards and labels.
+- Telemetry payloads flow end-to-end so metrics populate in Logs.
+- Admin access supports configured Telegram usernames.
+- Session caps enforce $0.10 cost or 40 requests (whichever first).
+- Researcher model defaults to `gpt-5.2-2025-12-11`.
+
+Tasks:
+- Increase text contrast for turn cards and metadata in `apps/web/src/index.css`.
+- Preserve telemetry when publishing stream events in `apps/server/src/routes/stream.ts`.
+- Allow admin access by username in auth/admin routes.
+- Add request-count budget tracking in worker and update deploy defaults.
+- Update runbooks and Playwright expectations for model/version labels.
+
+Tests:
+- Playwright E2E (headed) with visual inspection (prod).
+- Verify Cloud Run logs show telemetry and budget enforcement events.
+- Regression `npm test`.
+
+Acceptance:
+- Turn text and labels are readable on dark backgrounds.
+- Diagnostics widgets populate when telemetry exists.
+- Admin tab appears for configured usernames.
+- Session budget stops new turns at $0.10 or 40 requests.
+- Admin model label shows `gpt-5.2-2025-12-11`.
 
 ## Tooling and Stack
 - Frontend: React 19 + Tailwind CSS (TMA).

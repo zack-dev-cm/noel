@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { StorageRepositories } from '@noetic/shared';
+import { isAdminUser, parseAdminIdentifiers } from '../auth/adminAccess.js';
 import { validateInitData } from '../auth/telegramInit.js';
 import { hashIdentifier, logEvent } from '../observability/logger.js';
 
@@ -14,25 +15,18 @@ type ModelVersions = {
 function getModelVersions(): ModelVersions {
   const fallback = process.env.GEMINI_FALLBACK_MODEL;
   return {
-    researcher: process.env.OPENAI_RESEARCHER_MODEL || 'gpt-5-mini',
-    subject: process.env.GEMINI_MODEL || 'gemini-3.0-pro',
+    researcher: process.env.OPENAI_RESEARCHER_MODEL || 'gpt-5.2-2025-12-11',
+    subject: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
     ...(fallback ? { subject_fallback: fallback } : {})
   };
 }
 
-function parseAdminIds(): string[] {
-  return (process.env.ADMIN_TELEGRAM_IDS || '')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
-}
-
-function isAdmin(telegramId?: string | null): boolean {
-  if (!telegramId) {
+function isAdmin(telegramId?: string | null, username?: string | null): boolean {
+  if (!telegramId && !username) {
     return false;
   }
-  const admins = parseAdminIds();
-  return admins.includes(String(telegramId));
+  const admins = parseAdminIdentifiers(process.env.ADMIN_TELEGRAM_IDS);
+  return isAdminUser(admins, telegramId, username);
 }
 
 function extractInitData(req: any): string | null {
@@ -63,7 +57,8 @@ function authorizeAdmin(req: any): { telegramId?: string } | null {
     return null;
   }
   const telegramId = String(validation.data.user.id);
-  if (!isAdmin(telegramId)) {
+  const username = validation.data.user.username ?? null;
+  if (!isAdmin(telegramId, username)) {
     return null;
   }
   return { telegramId };

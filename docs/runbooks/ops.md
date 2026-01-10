@@ -40,6 +40,28 @@ gcloud alpha monitoring policies create \
   `resource.type=cloud_run_revision AND jsonPayload.event="worker_failed"`
 - Gemini fallback:
   `resource.type=cloud_run_revision AND jsonPayload.event="gemini_fallback"`
+- Subject pipeline requests:
+  `resource.type=cloud_run_revision AND jsonPayload.event="subject_request"`
+- Subject pipeline requests (worker service only):
+  `resource.type=cloud_run_revision AND resource.labels.service_name="noetic-mirror-worker" AND jsonPayload.event="subject_request"`
+- Subject pipeline responses:
+  `resource.type=cloud_run_revision AND jsonPayload.event="subject_response"`
+- Subject pipeline responses (worker service only):
+  `resource.type=cloud_run_revision AND resource.labels.service_name="noetic-mirror-worker" AND jsonPayload.event="subject_response"`
+- Subject empty responses:
+  `resource.type=cloud_run_revision AND jsonPayload.event="subject_empty_response"`
+- Stream empty content:
+  `resource.type=cloud_run_revision AND jsonPayload.event="stream_empty_content"`
+- Session budget exceeded:
+  `resource.type=cloud_run_revision AND jsonPayload.event="session_budget_exceeded"`
+- Stream publish failures:
+  `resource.type=cloud_run_revision AND jsonPayload.event="stream_publish_failed"`
+- Stream publish errors:
+  `resource.type=cloud_run_revision AND jsonPayload.event="stream_publish_error"`
+- Preferences updates:
+  `resource.type=cloud_run_revision AND jsonPayload.event="preferences_updated"`
+- Session language updates:
+  `resource.type=cloud_run_revision AND jsonPayload.event="session_language_updated"`
 - Payment failures:
   `resource.type=cloud_run_revision AND jsonPayload.event="payment_failed"`
 - Payment receipts:

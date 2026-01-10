@@ -19,7 +19,7 @@
 ### Детали по компонентам
 
 #### Gemini client
-- Модель: `GEMINI_MODEL` (default `gemini-3.0-pro`).
+- Модель: `GEMINI_MODEL` (default `gemini-3-pro-preview`).
 - Поддержка long-context.
 - Если `GEMINI_CONTEXT_CACHE=true`, сохранять contextId.
 

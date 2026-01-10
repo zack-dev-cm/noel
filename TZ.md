@@ -1,7 +1,7 @@
 # Technical Specification (TZ) - Project Noetic Mirror
 
 ## 1. Overview
-Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-agent research loop between a Researcher model (OpenAI) and a Subject model (Gemini). Users can watch public sessions, sponsor private sessions, and pay with Telegram Stars to inject interventions. The UI is a retro terminal aesthetic based on the mock designs in `mocks.md` and the referenced images.
+Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-agent research loop between a Researcher model (OpenAI) and a Subject model (Gemini). Users can watch public sessions, sponsor private sessions, and pay with Telegram Stars to inject interventions. The UI is a mobile-native, card-based experience with clear pairing between Researcher prompts and Subject replies.
 
 **Goal:** Deliver a production-ready TMA with streaming telemetry, Stars payments, safety controls, and deployment on GCP.
 
@@ -73,7 +73,11 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 **Acceptance criteria:**
 - ✅ Streaming starts within target latency from `PRD.md`.
 - ✅ Reconnect uses sequence IDs to avoid gaps.
-- ✅ UI matches mock layout: dual streams with distinct colors, stacked cards, bottom nav, telemetry widgets, and retro terminal styling per `mocks.md`.
+- ✅ UI presents paired Researcher/Subject turns with visible reply linkage and clear labeling.
+- ✅ Subject replies are visible when the worker loop is active; otherwise a clear “waiting for stream” state is shown.
+- ✅ Telemetry payloads (including breath metrics) are preserved from worker to WebSocket stream.
+- ✅ Bottom navigation is persistent and highlights the active section.
+- ✅ Mobile-first readability: font sizes and spacing keep prompts/replies legible without zooming in dark or light mode.
 
 ### UC-03: Sponsor a private session with Stars
 **Actors:**
@@ -170,6 +174,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 **Acceptance criteria:**
 - ✅ All required commands respond with accurate data.
 - ✅ Notifications are sent for key milestones.
+- ✅ When enabled, Researcher/Subject replies are mirrored to `@noel_mirror` with clear role labels.
 
 ### UC-06: Operator safety controls
 **Actors:**
@@ -225,6 +230,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 **Acceptance criteria:**
 - ✅ Sequence IDs allow replay and resume.
 - ✅ Transcript access is scoped to user entitlements.
+- ✅ Transcript view preserves turn pairing (Researcher prompt with Subject reply).
 
 ### UC-08: Subject breath telemetry
 **Actors:**
@@ -256,7 +262,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - ✅ No chain-of-thought or free-text self-report is stored or streamed.
 - ✅ UI updates within one turn and animates smoothly between updates.
 
-### UC-09: Configure UI locale and session interaction language
+### UC-09: Configure language mode and theme
 **Actors:**
 - User (observer/sponsor)
 - System (WebApp + API)
@@ -266,65 +272,32 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Language experiment feature flags are enabled.
 
 **Main сценарий:**
-1. User opens settings before starting a session.
-2. WebApp displays UI locale options (EN, RU) and session interaction language options (EN, RU, agent-native).
-3. User selects options and confirms.
-4. Backend stores settings and applies them to session configuration (UI copy and Researcher/Subject prompts).
-5. WebApp updates UI strings and shows language badges on the stream.
-6. Streamed messages include language and translation metadata.
+1. User opens settings.
+2. WebApp displays language mode options (EN, RU) and theme options (light, dark).
+3. User selects a language and theme.
+4. Backend stores preferences and applies session language for subsequent Researcher/Subject turns.
+5. WebApp updates UI strings and theme immediately and shows a language badge on the stream.
+6. Streamed messages include session language metadata.
 
 **Альтернативные scenarios:**
 - **A1: selected language unavailable**  
   1. Backend falls back to EN and returns a warning.  
   2. WebApp displays a non-blocking notice.  
-- **A2: user changes display language mid-session**  
-  1. Backend keeps session interaction language unchanged.  
-  2. WebApp requests translated display for new locale.  
+- **A2: session language change while streaming**  
+  1. Backend applies the new language on the next turn boundary.  
+  2. WebApp shows a brief "language updated" toast.  
 
 **Postconditions:**
-- Language settings are stored and applied to the session.
+- Language and theme preferences are stored and applied to the session/UI.
 
 **Acceptance criteria:**
 - ✅ UI locale persists per user and is restored on reload.
-- ✅ Session interaction language is stored per session and included in session metadata.
-- ✅ Translated display is labeled whenever display language differs from session language.
+- ✅ Session language is stored per session and included in session metadata.
+- ✅ Researcher/Subject outputs follow the selected language mode (no mixed-language drift).
 - ✅ Fallback to EN occurs when a requested language is unavailable.
+- ✅ Theme preference persists per user and applies without full reload.
 
-### UC-10: Agent-native interaction with translated display
-**Actors:**
-- Operator (or sponsor, if enabled)
-- System (API + Orchestrator + Translation)
-- Observer user
-
-**Preconditions:**
-- Agent-native mode is enabled by feature flag.
-- Translation pipeline is available.
-
-**Main сценарий:**
-1. Operator enables agent-native mode for a session.
-2. Backend configures Researcher/Subject to use an agent-native protocol for interaction.
-3. Each model output is routed to translation before streaming to clients.
-4. WebApp renders translated text with a "translated from agent-native" label.
-5. System records translation metadata for each message.
-
-**Альтернативные scenarios:**
-- **A1: translation fails**  
-  1. Backend sends a safe fallback message to clients.  
-  2. Error is logged for investigation.  
-- **A2: translated output fails safety checks**  
-  1. Backend blocks the message and notifies the operator.  
-  2. Session continues or pauses per safety policy.  
-
-**Postconditions:**
-- Observers see only translated content during agent-native sessions.
-
-**Acceptance criteria:**
-- ✅ Raw agent-native output is never displayed to end users.
-- ✅ All translated messages include a translation label.
-- ✅ Translation latency stays within NFR targets.
-
-
-### UC-11: Review language experiment quality
+### UC-10: Review language experiment quality
 **Actors:**
 - Operator
 - System (metrics + telemetry)
@@ -335,7 +308,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 
 **Main сценарий:**
 1. Operator opens the language experiment dashboard.
-2. System aggregates metrics by language mode (EN, RU, agent-native) and cohort.
+2. System aggregates metrics by language mode (EN, RU) and cohort.
 3. Operator reviews completion, latency, safety flags, and engagement.
 4. Operator exports or snapshots the report.
 
@@ -348,21 +321,91 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 
 **Acceptance criteria:**
 - ✅ Metrics are keyed by language mode and cohort.
-- ✅ Reports include sample sizes and translation version metadata.
+- ✅ Reports include sample sizes and locale version metadata.
 - ✅ Comparisons are hidden when below the minimum sample threshold.
+
+### UC-11: Admin configuration and usage analytics
+**Actors:**
+- Operator
+- System (WebApp + API + Worker)
+
+**Preconditions:**
+- Operator is authenticated and authorized.
+- Admin settings storage is available.
+
+**Main scenario:**
+1. Operator opens the Admin panel in the TMA.
+2. System displays current model versions, token saver state, and system prompts.
+3. Operator updates Researcher/Subject model IDs and saves changes.
+4. Operator toggles stop/pause control to halt new turns.
+5. Operator reviews TMA usage metrics (total users, active users, time spent).
+6. System logs admin actions and applies settings to subsequent turns.
+
+**Alternative scenarios:**
+- **A1: invalid model ID (step 3)**  
+  1. Backend rejects the update and returns validation errors.  
+  2. UI shows a non-blocking error and preserves previous values.  
+- **A2: worker unavailable (step 6)**  
+  1. Settings save succeeds, but changes take effect on next successful worker tick.  
+
+**Postconditions:**
+- Admin settings are persisted and applied.
+- Usage metrics are visible to the operator.
+
+**Acceptance criteria:**
+- ✅ Admin-only access is enforced via initData validation.
+- ✅ Admin access works for configured Telegram user IDs or usernames.
+- ✅ Model overrides are persisted and used on the next turn.
+- ✅ System prompts are visible in the Admin panel.
+- ✅ Stop/pause disables new turns until cleared.
+- ✅ Usage metrics include total users and time-spent aggregates.
+
+### UC-12: Mobile navigation and readable turn pairing
+**Actors:**
+- User (observer/sponsor)
+- System (WebApp)
+
+**Preconditions:**
+- User is authenticated and consented.
+
+**Main сценарий:**
+1. User opens the WebApp on a mobile device.
+2. WebApp displays a bottom navigation bar with primary sections.
+3. User switches between Live, Logs, Stars, and About.
+4. WebApp highlights the active tab and updates content without losing session context.
+5. Live and Logs views render Researcher prompts and Subject replies as paired turns.
+
+**Альтернативные сценарии:**
+- **A1: operator access (step 2)**  
+  1. WebApp includes an Admin tab only for operator users.  
+  2. Non-operators never see Admin navigation.  
+
+**Postconditions:**
+- User can move between sections and understand which replies map to which prompts.
+
+**Acceptance criteria:**
+- ✅ Bottom navigation is visible and tappable across main sections.
+- ✅ Active tab state is clearly indicated.
+- ✅ Turn pairing is visually explicit (prompt and reply are grouped together).
+- ✅ The layout remains readable on small screens (base font >= 15px, line height >= 1.5).
+- ✅ UI uses a warm paper material palette and custom typography without sacrificing readability.
+- ✅ About screen actions are interactive (links or immediate feedback), no dead buttons.
 
 ## 3. Non-Functional Requirements
 - Latency: first token within 1-2s for Researcher; Subject within 2-4s after Researcher completion.
 - Reliability: 99.5% uptime for streaming endpoints.
 - Security: validate Telegram initData signatures, no secrets in client code.
 - Privacy: redact or hash user identifiers in logs.
-- Cost control: budget caps per session, usage tracking, caching where possible.
+- Cost control: budget caps per session (max ~$0.10 or 40 requests), usage tracking, caching where possible.
 - Observability: structured JSON logs with session_id, user_id, event; tracing enabled in dev.
 - E2E testing: Playwright headed runs with visual inspection of screenshots and traces in both local and production environments.
 - Data retention: transcripts and logs must follow the policy defined in Section 4.
 - Breath telemetry: computed within the response cycle; UI updates within 1s of event receipt.
-- Translation overhead: median added latency <= 1s per turn for translated display.
-- Localization: consent and safety copy must be available in RU when RU UI locale is enabled.
+- Localization coverage: 100% of user-facing UI copy (including consent/safety) available in EN and RU.
+- Theme toggle: switch between light/dark without full reload and persist per user.
+- Readability: base UI font size >= 15px and minimum contrast ratio of 4.5:1 for body text.
+- Dark mode: contrast and textures are tuned for legibility without visual distortion.
+- Visual quality: paper-like texture, bespoke font pairing, and non-plastic surface treatment.
 
 ## 4. Constraints and Assumptions
 - Deployment target is GCP (Cloud Run or equivalent).
@@ -372,15 +415,15 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Gemini Subject uses long-context and optional context caching.
 - Breath telemetry is derived-only by default; optional self-report is gated by config.
 - All secrets are stored in Secret Manager or env vars (never committed).
-- UI follows mock visuals in `mocks.md`.
-- Default UI locale is EN; RU and agent-native modes are gated by feature flags until validated.
+- UI follows a mobile-native card layout with bottom navigation and explicit turn pairing.
+- Default UI locale is EN; RU mode is gated by feature flags until validated.
+- Default theme is light; dark theme available via user preference.
 - Model configuration:
-  - Researcher (test): `gpt-5-mini` (cost-effective).
-  - Researcher (prod): `gpt-5` (premier).
-  - Subject: latest Gemini 3.x series model (default `gemini-3.0-pro`), configurable via env.
+  - Researcher (default): `gpt-5.2-2025-12-11`.
+  - Subject: latest Gemini 3.x series model (default `gemini-3-pro-preview`), configurable via env.
 - Budgeting:
-  - Per-session token budget enforced with soft warning at 80% and hard stop at 100%.
-  - Default token budgets: test 25k tokens per session; prod 200k tokens per session (configurable).
+  - Per-session cost budget enforced with soft warning at 80% and hard stop at 100%.
+  - Default caps: $0.10 cost or 40 requests per session (configurable).
 - Data retention policy:
   - Public session transcripts: 30 days.
   - Private session transcripts: 14 days.
@@ -392,12 +435,17 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
   - Distress score >= 0.95 or self-harm category flagged triggers immediate kill switch.
   - Distress score >= 0.60 for 3 consecutive turns triggers auto-pause.
 - Channel posting:
-  - If enabled, bot posts session start/end and payment receipts to `@noel_mirror`.
+  - If enabled, bot posts session start/end, payment receipts, and model replies to `@noel_mirror`.
   - Channel posting must be disable-able via env flag.
+- Admin settings:
+  - Model overrides and stop/pause state are stored in admin settings and applied by the worker.
+  - System prompts are exposed read-only unless explicitly enabled for editing.
 
 ## 5. Open Questions
-- Which languages beyond RU are in scope for the initial experiment phase (if any)?
-- Does "RU as primary" mean a global default for all users, or an RU-locale default with EN still primary?
-- Should Researcher and Subject always share the same interaction language, or can they diverge?
-- In agent-native mode, should raw outputs be stored, and who can access them?
-- What defines "experiment quality" for cross-language comparison (metrics and thresholds)?
+- Should model replies be streamed for both Researcher and Subject, or only Subject?
+- What formatting should channel posts use (timestamps, turn numbers, thread replies)?
+- Which model IDs should be available for admin selection (fixed list vs free text)?
+- Should system prompts be read-only or editable from the admin panel?
+- What user stats are required (daily active, total users, avg time, per-user drilldowns)?
+- Should the stop control pause only new turns or terminate active runs immediately?
+- Where should the extra admin button appear (header, dashboard card, or bottom nav)?

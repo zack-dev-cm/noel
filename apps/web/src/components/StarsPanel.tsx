@@ -1,19 +1,21 @@
 import { useState } from 'react';
 import WebApp from '@twa-dev/sdk';
 import { getTelegramInitData } from '../hooks/useTelegram';
+import type { Copy } from '../i18n';
 
 interface StarsPanelProps {
   apiBase: string;
+  copy: Copy['starsPanel'];
 }
 
-export default function StarsPanel({ apiBase }: StarsPanelProps) {
+export default function StarsPanel({ apiBase, copy }: StarsPanelProps) {
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState<string | null>(null);
 
   const requestInvoice = async (type: 'stargazer' | 'cosmic_patron' | 'universal_architect') => {
     const initData = getTelegramInitData() || import.meta.env.VITE_FAKE_INIT_DATA || '';
     if (!initData) {
-      setStatus('Missing initData. Open inside Telegram.');
+      setStatus(copy.missingInitData);
       return;
     }
 
@@ -32,14 +34,14 @@ export default function StarsPanel({ apiBase }: StarsPanelProps) {
       if (WebApp?.openInvoice) {
         WebApp.openInvoice(data.invoice_link, (result) => {
           if (result === 'paid') {
-            setStatus('Payment confirmed.');
+            setStatus(copy.paymentConfirmed);
           }
         });
       } else {
         window.open(data.invoice_link, '_blank');
       }
     } catch {
-      setStatus('Unable to create invoice.');
+      setStatus(copy.invoiceFailed);
     } finally {
       setLoading(null);
     }
@@ -47,34 +49,37 @@ export default function StarsPanel({ apiBase }: StarsPanelProps) {
 
   return (
     <div className="panel p-4">
-      <h3 className="text-sm font-semibold">Support with Stars</h3>
-      <p className="mt-2 text-xs text-white/60">
-        Choose a tier to fund sessions or unlock interventions.
+      <h3 className="text-sm font-semibold">{copy.title}</h3>
+      <p className="mt-2 text-xs text-slate-600">
+        {copy.subtitle}
       </p>
       <div className="mt-3 grid gap-2 text-sm">
         <button
-          className="rounded-xl border border-amber-300/40 bg-amber-500/10 py-2 text-amber-200"
+          type="button"
+          className="tier-button tier-button--stargazer"
           onClick={() => requestInvoice('stargazer')}
           disabled={loading === 'stargazer'}
         >
-          {loading === 'stargazer' ? 'Creating...' : 'Stargazer (10★)'}
+          {loading === 'stargazer' ? copy.creating : copy.stargazer}
         </button>
         <button
-          className="rounded-xl border border-neon/40 bg-neon/10 py-2 text-neon"
+          type="button"
+          className="tier-button tier-button--cosmic"
           onClick={() => requestInvoice('cosmic_patron')}
           disabled={loading === 'cosmic_patron'}
         >
-          {loading === 'cosmic_patron' ? 'Creating...' : 'Cosmic Patron (100★)'}
+          {loading === 'cosmic_patron' ? copy.creating : copy.cosmicPatron}
         </button>
         <button
-          className="rounded-xl border border-purple-300/40 bg-purple-500/10 py-2 text-purple-200"
+          type="button"
+          className="tier-button tier-button--universal"
           onClick={() => requestInvoice('universal_architect')}
           disabled={loading === 'universal_architect'}
         >
-          {loading === 'universal_architect' ? 'Creating...' : 'Universal Architect (1000★)'}
+          {loading === 'universal_architect' ? copy.creating : copy.universalArchitect}
         </button>
       </div>
-      {status && <p className="mt-2 text-xs text-white/60">{status}</p>}
+      {status && <p className="mt-2 text-xs text-slate-600">{status}</p>}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { Router } from 'express';
 import type { StorageRepositories, UserRecord } from '@noetic/shared';
+import { isAdminUser, parseAdminIdentifiers } from '../auth/adminAccess.js';
 import { validateInitData } from '../auth/telegramInit.js';
 import { logEvent } from '../observability/logger.js';
 
@@ -26,11 +27,9 @@ router.post('/api/auth/init', async (req, res) => {
 
   const storage = req.app.locals.storage as StorageRepositories;
   const telegramId = String(validation.data.user.id);
-  const adminIds = (process.env.ADMIN_TELEGRAM_IDS || '')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
-  const isOperator = adminIds.includes(telegramId);
+  const adminList = parseAdminIdentifiers(process.env.ADMIN_TELEGRAM_IDS);
+  const username = validation.data.user.username ?? null;
+  const isOperator = isAdminUser(adminList, telegramId, username);
   let user = await storage.users.getByTelegramId(telegramId);
 
   if (!user) {
@@ -41,6 +40,8 @@ router.post('/api/auth/init', async (req, res) => {
       telegram_username: validation.data.user.username ?? null,
       consented_at: null,
       is_operator: false,
+      ui_locale: 'en',
+      ui_theme: 'light',
       created_at: now,
       updated_at: now
     };
@@ -57,7 +58,11 @@ router.post('/api/auth/init', async (req, res) => {
     ok: true,
     userId: user.id,
     consented: Boolean(user.consented_at),
-    isOperator: user.is_operator || isOperator
+    isOperator: user.is_operator || isOperator,
+    preferences: {
+      ui_locale: user.ui_locale ?? 'en',
+      ui_theme: user.ui_theme ?? 'light'
+    }
   });
 });
 

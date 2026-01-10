@@ -39,6 +39,8 @@ router.post('/api/payments/invoice', async (req, res) => {
       telegram_username: validation.data.user.username ?? null,
       consented_at: null,
       is_operator: false,
+      ui_locale: 'en',
+      ui_theme: 'light',
       created_at: now,
       updated_at: now
     });

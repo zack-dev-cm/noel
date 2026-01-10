@@ -20,4 +20,17 @@ export class InMemorySessionRepository implements SessionRepository {
   async getSession(sessionId: string): Promise<SessionRecord | null> {
     return this.store.sessions.get(sessionId) ?? null;
   }
+
+  async updateSessionLanguage(
+    sessionId: string,
+    session_language: SessionRecord['session_language']
+  ): Promise<SessionRecord> {
+    const session = this.store.sessions.get(sessionId);
+    if (!session) {
+      throw new Error('session_not_found');
+    }
+    const updated = { ...session, session_language };
+    this.store.sessions.set(sessionId, updated);
+    return updated;
+  }
 }

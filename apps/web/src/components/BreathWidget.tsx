@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import type { Copy } from '../i18n';
 
 type BreathTelemetry = {
   bpm: number;
@@ -12,6 +13,7 @@ interface BreathWidgetProps {
   breath?: BreathTelemetry;
   className?: string;
   style?: CSSProperties;
+  copy: Copy['breath'];
 }
 
 const formatValue = (value?: number, digits = 2) => {
@@ -21,15 +23,19 @@ const formatValue = (value?: number, digits = 2) => {
   return value.toFixed(digits);
 };
 
-const formatSource = (source?: BreathTelemetry['source']) =>
-  source ? source.replace('_', ' ') : 'derived';
+const formatSource = (source: BreathTelemetry['source'] | undefined, labels: Copy['breath']['sources']) => {
+  if (!source) {
+    return labels.derived;
+  }
+  return labels[source] ?? source.replace('_', ' ');
+};
 
-export default function BreathWidget({ breath, className, style }: BreathWidgetProps) {
+export default function BreathWidget({ breath, className, style, copy }: BreathWidgetProps) {
   const bpm = breath?.bpm;
   const variability = breath?.variability;
   const coherence = breath?.coherence;
-  const phase = breath?.phase ?? '—';
-  const source = formatSource(breath?.source);
+  const phase = breath?.phase ? copy.phases[breath.phase] ?? breath.phase : '—';
+  const source = formatSource(breath?.source, copy.sources);
 
   const pulseDuration = bpm ? Math.max(2, 60 / bpm) : 4;
   const pulseStrength =
@@ -48,8 +54,8 @@ export default function BreathWidget({ breath, className, style }: BreathWidgetP
     <div className={classes} style={style} data-testid="breath-widget">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase text-white/60">Synthetic breath</p>
-          <h3 className="text-sm font-semibold">Cadence + variability</h3>
+          <p className="text-xs uppercase text-slate-500">{copy.title}</p>
+          <h3 className="text-sm font-semibold">{copy.subtitle}</h3>
         </div>
         <span className="chip">{source}</span>
       </div>
@@ -61,27 +67,27 @@ export default function BreathWidget({ breath, className, style }: BreathWidgetP
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div className="metric">
-          <span>Cadence</span>
+          <span>{copy.cadence}</span>
           <strong data-testid="breath-bpm">
             {typeof bpm === 'number' ? `${bpm.toFixed(1)} bpm` : '—'}
           </strong>
         </div>
         <div className="metric">
-          <span>Variability</span>
+          <span>{copy.variability}</span>
           <strong data-testid="breath-variability">{formatValue(variability)}</strong>
         </div>
         <div className="metric">
-          <span>Coherence</span>
+          <span>{copy.coherence}</span>
           <strong data-testid="breath-coherence">{formatValue(coherence)}</strong>
         </div>
         <div className="metric">
-          <span>Phase</span>
+          <span>{copy.phase}</span>
           <strong data-testid="breath-phase">{breath ? phase : '—'}</strong>
         </div>
       </div>
 
       {!breath && (
-        <p className="mt-3 text-xs text-white/60">Awaiting breath telemetry from the Subject stream.</p>
+        <p className="mt-3 text-xs text-slate-600">{copy.awaiting}</p>
       )}
     </div>
   );

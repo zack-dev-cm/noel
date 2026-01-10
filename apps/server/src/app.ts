@@ -6,8 +6,10 @@ import authRouter from './routes/auth.js';
 import adminRouter from './routes/admin.js';
 import interventionsRouter from './routes/interventions.js';
 import paymentsRouter from './routes/payments.js';
+import sessionSettingsRouter from './routes/sessionSettings.js';
 import streamRouter from './routes/stream.js';
 import telegramWebhookRouter from './routes/telegramWebhook.js';
+import userPreferencesRouter from './routes/userPreferences.js';
 import { createRepositories } from './storage/db.js';
 import { applyMigrations } from './storage/migrate.js';
 import { startRetentionJob } from './storage/retention.js';
@@ -42,6 +44,8 @@ export function createApp() {
   app.use(adminRouter);
   app.use(interventionsRouter);
   app.use(paymentsRouter);
+  app.use(userPreferencesRouter);
+  app.use(sessionSettingsRouter);
   app.use(streamRouter);
   app.use(telegramWebhookRouter);
 
