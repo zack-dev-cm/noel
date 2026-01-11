@@ -15,4 +15,3 @@
 - Confirm `OPENAI_COST_PER_1K_TOKENS` for `gpt-5.2-2025-12-11` (currently using 0.03) to enforce the $0.10 cap accurately.
 - Can you provide a valid `PLAYWRIGHT_INIT_DATA` (or confirm I should generate it using `TELEGRAM_BOT_TOKEN`) for prod E2E?
 - Can I delete Playwright artifacts in `test-results/` to free disk space (only ~58MiB left)?
-- `git push` failed with "Invalid username or token" when using `DEV_CM_GITHUB_TOKEN`; can you confirm the token value or preferred auth method?
