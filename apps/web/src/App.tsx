@@ -366,6 +366,12 @@ export default function App() {
   useEffect(() => {
     WebApp.ready();
     WebApp.expand();
+    if (typeof document !== 'undefined') {
+      const telegram = (window as typeof window & { Telegram?: { WebApp?: unknown } }).Telegram;
+      if (telegram?.WebApp) {
+        document.documentElement.classList.add('tma');
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -381,7 +387,7 @@ export default function App() {
       window.localStorage.setItem('noetic_theme', theme);
       window.localStorage.setItem('noetic_locale', locale);
     }
-    WebApp.setHeaderColor(theme === 'dark' ? '#0f1419' : '#f7f0e6');
+    WebApp.setHeaderColor(theme === 'dark' ? '#0e1319' : '#f7f0e6');
   }, [locale, theme]);
 
   useEffect(() => {
@@ -595,6 +601,10 @@ export default function App() {
       <div className="ambient">
         <div className="orb orb-a" />
         <div className="orb orb-b" />
+        <div className="orb orb-c" />
+        <div className="beam beam-a" />
+        <div className="beam beam-b" />
+        <div className="halo" />
         <div className="grid-glow" />
       </div>
 

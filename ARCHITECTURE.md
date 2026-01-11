@@ -34,6 +34,14 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
     - Inputs: global CSS tokens
     - Outputs: tactile UI styling
     - UC: UC-12
+  - Apply luxe motion and lighting system (ambient glows, panel sheens, layered shadows) with reduced-motion fallbacks.
+    - Inputs: motion CSS tokens + keyframes
+    - Outputs: premium depth and animation across cards, tabs, and widgets
+    - UC: UC-12
+  - Tune typography for readability across small screens (size/line-height/optical sizing).
+    - Inputs: font imports + global typography tokens
+    - Outputs: improved legibility for all UI text
+    - UC: UC-12
   - Render language and theme toggles; apply localization and theme in real time.
     - Inputs: user preferences, session language
     - Outputs: localized UI, theme state, preference updates
@@ -145,8 +153,8 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
     - Outputs: bot messages
     - UC: UC-05
   - Post a pinned WebApp launch message to the public channel via admin command (/post_tma).
-    - Inputs: Telegram updates, `WEB_APP_TMA_URL` (fallback `WEB_APP_URL`)
-    - Outputs: channel message with inline URL button (Telegram channels do not accept `web_app`)
+    - Inputs: Telegram updates, `WEB_APP_TMA_URL` (TMA deep link)
+    - Outputs: channel message with inline URL button labeled `Open` (Telegram channels do not accept `web_app`)
     - UC: UC-05
   - Post milestones to `@noel_mirror` when enabled.
     - Inputs: session/payment events
@@ -259,11 +267,10 @@ flowchart LR
 ## 3. System Architecture
 
 ### 3.1 Architecture Style
-Split service architecture:
-- **Web Service** handles HTTP, WebSocket, bot webhook, and static frontend.
-- **Worker Service** runs the Researcher/Subject loop with concurrency=1 per instance.
+Single service architecture:
+- **Web Service** handles HTTP, WebSocket, bot webhook, static frontend, and runs the Researcher/Subject loop in-process (`SERVICE_ROLE=all`).
 
-**Rationale:** isolates long-running model loops from WebSocket fan-out and allows independent scaling.
+**Rationale:** enforce a single Cloud Run instance for the loop and UI while keeping the deployment footprint minimal.
 
 ### 3.2 System Components
 
@@ -277,11 +284,10 @@ Split service architecture:
   - Serves `web/dist` for the TMA UI
 - Dependencies: Postgres, Redis, Telegram Bot API
 
-**Component: Worker Service**
-- Type: Backend worker
+**Component: Worker Loop (In-Process)**
+- Type: Background loop inside Web Service
 - Tech: Node.js 20, TypeScript
 - Interfaces:
-  - Redis queue or HTTP trigger from Web Service
   - Publishes events to Redis streams
 - Dependencies: OpenAI API, Gemini API, Postgres, Redis
 
@@ -319,13 +325,11 @@ flowchart TB
   WebSvc --> Redis[(Memorystore Redis)]
   WebSvc --> TG[Telegram Bot API]
   WebSvc --> Channel[@noel_mirror]
-  WebSvc --> Worker[Worker Service]
-  Worker --> Redis
-  Worker --> PG
-  Worker --> OpenAI[OpenAI Responses API]
-  Worker --> Gemini[Gemini API]
+  WebSvc --> Redis
+  WebSvc --> PG
+  WebSvc --> OpenAI[OpenAI Responses API]
+  WebSvc --> Gemini[Gemini API]
   WebSvc --> Logs[Cloud Logging]
-  Worker --> Logs
 ```
 
 ## 4. Data Model
@@ -712,7 +716,7 @@ sessions ||--o{ safety_events
 
 ### 6.4 Infrastructure
 - Docker + Cloud Build
-- Cloud Run (web + worker)
+- Cloud Run (single service)
 - Secret Manager for API keys and bot tokens
 - Cloud Logging + alerting
 
@@ -735,8 +739,8 @@ sessions ||--o{ safety_events
 ## 8. Scalability & Performance
 
 ### 8.1 Scaling Strategy
-- Web service scales for viewers (higher concurrency).
-- Worker service scales for sessions with concurrency=1 per instance.
+- Single service runs with max instances = 1 and higher concurrency for viewers.
+- Worker loop runs in-process and must not be duplicated across instances.
 
 ### 8.2 Caching
 - Redis stream buffers for quick replay.
@@ -792,10 +796,8 @@ sessions ||--o{ safety_events
   - `RESEARCHER_MAX_OUTPUT_CHARS_SAVER`, `SUBJECT_MAX_OUTPUT_CHARS_SAVER`
 
 ### 10.4 Deployment Notes
-- Cloud Run web service: public, concurrency >1, `SERVICE_ROLE=web`.
-- Cloud Run worker service: concurrency=1, `SERVICE_ROLE=worker`, `WORKER_HTTP_ENABLED=true`,
-  and `STREAM_PUBLISH_URL`/`SETTINGS_API_BASE` pointing at the web service.
-- Min/max instances explicitly set; VPC connector if using private Redis.
+- Cloud Run service: public, `SERVICE_ROLE=all`, `WORKER_HTTP_ENABLED=false`, `SESSION_ID=public`.
+- Max instances explicitly set to 1; VPC connector if using private Redis.
 
 ## 11. Open Questions
 None.

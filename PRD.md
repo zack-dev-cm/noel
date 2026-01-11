@@ -15,6 +15,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Allow users to switch language mode and theme without leaving the session.
 - Deliver a mobile-native UI with bottom navigation and readable, paired Researcher/Subject turns.
 - Elevate visual quality with a natural paper feel and bespoke typography (avoid cheap/plastic look).
+- Elevate visual quality further with dynamic lighting, layered shadows, and refined motion while keeping text highly readable.
 - Refine UI copy and layout to feel like a premium mobile app (concise, focused, no demo feel).
 - Ensure dark mode contrast and legibility are consistent across all screens.
 - Ensure log text, labels, and metrics remain readable in Telegram WebView on dark backgrounds.
@@ -22,6 +23,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Provide admin controls for model selection, system prompt review, stop/pause, and usage analytics.
 - Ensure Researcher/Subject replies are fully visible in the UI without truncation or clipping.
 - Keep model replies meaningful but mid-length (not too short, not full-page, target 2–6 sentences for Subject).
+- Run as a single Cloud Run service (UI + API + worker) with max instances set to 1.
 
 ## Non-Goals
 - Not a general chatbot for arbitrary queries.
@@ -55,7 +57,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Commands: /balance, /history, /sponsor, /help.
 - Push notifications for milestones and session status.
 - Stream every Researcher/Subject reply to `@noel_mirror` when enabled, with clear role labels and chunking for Telegram message limits.
-- Admin command posts a pinned channel message with a URL button using `WEB_APP_TMA_URL` (fallback `WEB_APP_URL`) and `PUBLIC_CHANNEL_ID`.
+- Admin command posts a pinned channel message with an `Open` URL button using `WEB_APP_TMA_URL` (TMA deep link) and `PUBLIC_CHANNEL_ID`.
 
 ### Telegram Mini App
 - Full-screen WebApp with mobile-native UI.
@@ -75,6 +77,9 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Bottom navigation for Live, Logs, Stars, About (and Admin for operators).
 - Settings panel with language (EN/RU) and theme (light/dark) toggles.
 - Warm paper-textured background and custom font pairing for an editorial, tactile feel.
+- Advanced motion system (ambient glows, surface sheens, active tab pulses) with reduced-motion fallbacks.
+- Layered shadows and light falloff on cards, tabs, and chips to add depth.
+- Typography tuned for readability across small screens (size, line-height, optical sizing).
 - All visible buttons have working actions or a clear “not available” state (no dead UI).
 - About screen actions open configured resources or provide immediate feedback.
 - About Ethics/Community dialogs include detailed guidance and the main channel link (https://t.me/noel_mirror).
@@ -148,6 +153,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Theme toggle updates UI without full reload and persists per user.
 - Visual quality: paper-like materiality, custom typography, and readable contrast on mobile.
 - Dark mode contrast meets WCAG AA for body text and avoids distorted backgrounds.
+- Motion: animations are GPU-friendly, subtle, and respect prefers-reduced-motion.
 
 ## Deployment and Operations
 - Containerized deploy target (Cloud Run or equivalent).

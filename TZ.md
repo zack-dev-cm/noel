@@ -183,7 +183,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - ✅ Notifications are sent for key milestones.
 - ✅ When enabled, every Researcher/Subject reply is mirrored to `@noel_mirror` with clear role labels (public session by default).
 - ✅ Channel posts respect Telegram message limits via chunking (no silent truncation).
-- ✅ `/post_tma` posts a channel message that includes an Open WebApp URL button (`WEB_APP_TMA_URL` fallback `WEB_APP_URL`).
+- ✅ `/post_tma` posts a channel message that includes an `Open` URL button using `WEB_APP_TMA_URL`.
 
 ### UC-06: Operator safety controls
 **Actors:**
@@ -400,6 +400,8 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - ✅ Turn labels remain “Researcher” and “Subject,” with short model tags appended.
 - ✅ The layout remains readable on small screens (base font >= 15px, line height >= 1.5).
 - ✅ UI uses a warm paper material palette and custom typography without sacrificing readability.
+- ✅ UI motion includes ambient lighting, surface sheens, and tab pulses with reduced-motion fallbacks.
+- ✅ Layered shadows add depth on cards, tabs, chips, and panels without lowering contrast.
 - ✅ About screen actions are interactive (links or immediate feedback), no dead buttons.
 - ✅ Ethics and Community content is detailed, localized (EN/RU), and includes the main Telegram channel link.
 
@@ -419,10 +421,12 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Readability: base UI font size >= 15px and minimum contrast ratio of 4.5:1 for body text.
 - Dark mode: contrast and textures are tuned for legibility without visual distortion.
 - Visual quality: paper-like texture, bespoke font pairing, and non-plastic surface treatment.
+- Motion: animations are GPU-friendly, subtle, and disabled when prefers-reduced-motion is enabled.
 - Response length: Subject replies target 2–6 sentences; Researcher prompts remain 1–2 short sentences.
 
 ## 4. Constraints and Assumptions
 - Deployment target is GCP (Cloud Run or equivalent).
+- Cloud Run runs as a single service with max instances=1; worker loop runs in-process (`SERVICE_ROLE=all`, `WORKER_HTTP_ENABLED=false`).
 - WebApp is built with React 19 + Tailwind (per DEV_PLAN).
 - Payments are via Telegram Stars (currency `XTR`).
 - Use OpenAI Responses API by default for Researcher.

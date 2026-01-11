@@ -3,18 +3,14 @@ import { logEvent } from '../observability/logger.js';
 import { sendMessage, type TelegramSendResult } from './telegram.js';
 
 const TELEGRAM_MESSAGE_LIMIT = 4096;
-const CHANNEL_WEBAPP_BUTTON_LABEL = 'Open WebApp';
+const CHANNEL_WEBAPP_BUTTON_LABEL = 'Open';
 
 function resolveChannelId() {
   return process.env.PUBLIC_CHANNEL_ID || '@noel_mirror';
 }
 
-function resolveChannelWebAppUrl(fallbackUrl: string) {
-  const configured = process.env.WEB_APP_TMA_URL;
-  if (configured && configured.trim()) {
-    return configured.trim();
-  }
-  return fallbackUrl.trim();
+function resolveChannelWebAppUrl(value: string) {
+  return value.trim();
 }
 
 function resolveChannelPostsEnabled() {

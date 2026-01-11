@@ -13,3 +13,5 @@
 - Where should the extra admin button appear (header, dashboard card, or bottom nav)?
 - Should the 40-request budget persist across worker restarts (Redis/DB), or is in-memory per worker instance acceptable?
 - Confirm `OPENAI_COST_PER_1K_TOKENS` for `gpt-5.2-2025-12-11` (currently using 0.03) to enforce the $0.10 cap accurately.
+- Can you provide a valid `PLAYWRIGHT_INIT_DATA` (or confirm I should generate it using `TELEGRAM_BOT_TOKEN`) for prod E2E?
+- Can I delete Playwright artifacts in `test-results/` to free disk space (only ~58MiB left)?

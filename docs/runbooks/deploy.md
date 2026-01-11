@@ -3,7 +3,7 @@
 ## Current GCP Target
 - Project: `energy-meters`
 - Region: `us-east1`
-- Cloud Run services: `noetic-mirror-web` (UI + API) and `noetic-mirror-worker` (research loop)
+- Cloud Run service: `noetic-mirror-web` (UI + API + research loop)
 - Web URL: `https://noetic-mirror-web-zlvmfsrm6a-ue.a.run.app`
 - Telegram WebApp: `https://t.me/noetic_mirror_bot/app`
 - Cloud SQL: `energy-meters:us-east1:bvis-postgres` (db: `noetic_mirror`, user: `noetic_user`)
@@ -28,11 +28,11 @@
 - ENV (default: prod)
 - INIT_DATA_MAX_AGE_SECONDS (default: 86400)
 - WEB_APP_URL (Mini App base URL for deep links)
-- WEB_APP_TMA_URL (optional; t.me deeplink for channel buttons, e.g. `https://t.me/noetic_mirror_bot/app`)
+- WEB_APP_TMA_URL (t.me deeplink for channel buttons, required for `/post_tma`, e.g. `https://t.me/noetic_mirror_bot/app`)
 - LOG_LEVEL (info|debug)
-- SERVICE_ROLE (web|worker|all; default: web)
-- WORKER_HTTP_ENABLED (default: true for worker)
-- SESSION_ID (default: public for worker)
+- SERVICE_ROLE (web|all; default: all)
+- WORKER_HTTP_ENABLED (default: false when running worker inside web)
+- SESSION_ID (default: public)
 - ADMIN_TELEGRAM_IDS (comma-separated Telegram user IDs or usernames allowed for admin access)
   - Example: `ADMIN_TELEGRAM_IDS=rheuiii,123456`
 - OPENAI_RESEARCHER_MODEL (default: gpt-5.2-2025-12-11)
@@ -83,13 +83,12 @@ PROJECT_ID=<PROJECT_ID> REGION=<REGION> WEB_APP_URL=<WEB_APP_URL> \
 PROJECT_ID=<PROJECT_ID>
 REGION=<REGION>
 SERVICE=noetic-mirror-web
-WORKER_SERVICE=noetic-mirror-worker
 IMAGE=gcr.io/$PROJECT_ID/noetic-mirror:latest
 
 PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
   gcloud builds submit --project "$PROJECT_ID" --tag "$IMAGE"
 
-# Deploy Cloud Run (web service)
+# Deploy Cloud Run (single service: web + worker)
 PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
   gcloud run deploy "$SERVICE" \
   --project "$PROJECT_ID" --region "$REGION" \
@@ -99,21 +98,8 @@ PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
   --add-cloudsql-instances <CLOUDSQL_INSTANCE> \
   --vpc-connector <VPC_CONNECTOR> --vpc-egress private-ranges-only \
   --set-secrets OPENAI_API_KEY=<SECRET_NAME>:latest,GEMINI_API_KEY=<SECRET_NAME>:latest,TELEGRAM_BOT_TOKEN=<SECRET_NAME>:latest,DATABASE_URL=<SECRET_NAME>:latest,REDIS_URL=<SECRET_NAME>:latest,STREAM_PUBLISH_TOKEN=<SECRET_NAME>:latest,WEBHOOK_SECRET=<SECRET_NAME>:latest \
-  --set-env-vars ENV=prod,SERVICE_ROLE=web,WORKER_HTTP_ENABLED=false,INIT_DATA_MAX_AGE_SECONDS=86400,WEB_APP_URL=<WEB_APP_URL>,WEBHOOK_BASE_URL=<WEB_APP_URL>,STREAM_PUBLISH_URL=<WEB_APP_URL>,INTERVENTION_API_BASE=<WEB_APP_URL>,SETTINGS_API_BASE=<WEB_APP_URL> \
-  --cpu 2 --memory 2Gi --concurrency 10 --min-instances 1 --max-instances 3 --no-cpu-throttling
-
-# Deploy Cloud Run (worker service)
-PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
-gcloud run deploy "$WORKER_SERVICE" \
-  --project "$PROJECT_ID" --region "$REGION" \
-  --image "$IMAGE" \
-  --platform managed --allow-unauthenticated \
-  --service-account <SERVICE_ACCOUNT> \
-  --add-cloudsql-instances <CLOUDSQL_INSTANCE> \
-  --vpc-connector <VPC_CONNECTOR> --vpc-egress private-ranges-only \
-  --set-secrets OPENAI_API_KEY=<SECRET_NAME>:latest,GEMINI_API_KEY=<SECRET_NAME>:latest,TELEGRAM_BOT_TOKEN=<SECRET_NAME>:latest,DATABASE_URL=<SECRET_NAME>:latest,REDIS_URL=<SECRET_NAME>:latest,STREAM_PUBLISH_TOKEN=<SECRET_NAME>:latest,WEBHOOK_SECRET=<SECRET_NAME>:latest \
-  --set-env-vars ENV=prod,SERVICE_ROLE=worker,WORKER_HTTP_ENABLED=true,SESSION_ID=public,INIT_DATA_MAX_AGE_SECONDS=86400,WEB_APP_URL=<WEB_APP_URL>,WEBHOOK_BASE_URL=<WEB_APP_URL>,STREAM_PUBLISH_URL=<WEB_APP_URL>,INTERVENTION_API_BASE=<WEB_APP_URL>,SETTINGS_API_BASE=<WEB_APP_URL> \
-  --cpu 2 --memory 2Gi --concurrency 1 --min-instances 1 --max-instances 1 --no-cpu-throttling
+  --set-env-vars ENV=prod,SERVICE_ROLE=all,WORKER_HTTP_ENABLED=false,SESSION_ID=public,INIT_DATA_MAX_AGE_SECONDS=86400,WEB_APP_URL=<WEB_APP_URL>,WEBHOOK_BASE_URL=<WEB_APP_URL>,STREAM_PUBLISH_URL=<WEB_APP_URL>,INTERVENTION_API_BASE=<WEB_APP_URL>,SETTINGS_API_BASE=<WEB_APP_URL> \
+  --cpu 2 --memory 2Gi --concurrency 10 --min-instances 1 --max-instances 1 --no-cpu-throttling
 ```
 
 ## Deploy Debug Loop (Required)
@@ -140,8 +126,8 @@ gcloud run deploy "$WORKER_SERVICE" \
   - `gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=<SERVICE>" --project <PROJECT_ID> --limit 100`
 
 ## Stop/Resume Research Loop
-- Stop: scale `noetic-mirror-worker` to 0 or set `min-instances=0`.
-- Resume: scale `noetic-mirror-worker` back to 1 (or redeploy).
+- Stop: redeploy with `SERVICE_ROLE=web` to disable the worker loop.
+- Resume: redeploy with `SERVICE_ROLE=all`.
 
 ## Rollback
 ```bash

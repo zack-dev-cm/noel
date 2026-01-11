@@ -52,9 +52,9 @@ export async function handleCommand(
         await sendMessage(botToken, chatId, 'Not authorized to post channel links.');
         return;
       }
-      const channelUrl = process.env.WEB_APP_TMA_URL || baseUrl;
-      if (!channelUrl) {
-        await sendMessage(botToken, chatId, 'WEB_APP_URL or WEB_APP_TMA_URL is not configured.');
+      const channelUrl = process.env.WEB_APP_TMA_URL;
+      if (!channelUrl || !channelUrl.trim()) {
+        await sendMessage(botToken, chatId, 'WEB_APP_TMA_URL is not configured.');
         return;
       }
       const result = await postChannelWebAppLink(botToken, channelUrl, CHANNEL_PIN_MESSAGE);

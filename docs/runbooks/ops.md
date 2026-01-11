@@ -19,8 +19,8 @@ PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
 
 ## Bot Operations
 - Post a pinned WebApp link to the public channel (admin only): send `/post_tma` to the bot.
-- Expect a channel message with an Open WebApp button that can be pinned.
-- Requires `WEB_APP_TMA_URL` (or `WEB_APP_URL` fallback), `PUBLIC_CHANNEL_ID`, and bot admin rights in the channel.
+- Expect a channel message with an `Open` button that can be pinned.
+- Requires `WEB_APP_TMA_URL`, `PUBLIC_CHANNEL_ID`, and bot admin rights in the channel.
 - Telegram channels require URL buttons (not `web_app`), so use a t.me deeplink if available.
 
 ## Safety Thresholds
@@ -48,16 +48,10 @@ gcloud alpha monitoring policies create \
   `resource.type=cloud_run_revision AND jsonPayload.event="gemini_fallback"`
 - Subject pipeline requests:
   `resource.type=cloud_run_revision AND jsonPayload.event="subject_request"`
-- Subject pipeline requests (worker service only):
-  `resource.type=cloud_run_revision AND resource.labels.service_name="noetic-mirror-worker" AND jsonPayload.event="subject_request"`
 - Subject pipeline responses:
   `resource.type=cloud_run_revision AND jsonPayload.event="subject_response"`
-- Subject pipeline responses (worker service only):
-  `resource.type=cloud_run_revision AND resource.labels.service_name="noetic-mirror-worker" AND jsonPayload.event="subject_response"`
 - Researcher responses:
   `resource.type=cloud_run_revision AND jsonPayload.event="researcher_response"`
-- Researcher responses (worker service only):
-  `resource.type=cloud_run_revision AND resource.labels.service_name="noetic-mirror-worker" AND jsonPayload.event="researcher_response"`
 - Output length over char cap (Subject):
   `resource.type=cloud_run_revision AND jsonPayload.event="subject_response" AND jsonPayload.over_char_cap=true`
 - Output length over char cap (Researcher):

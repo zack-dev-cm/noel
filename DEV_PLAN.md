@@ -320,12 +320,12 @@ Acceptance:
 
 ### M16: Channel Pinned WebApp Link
 Deliverables:
-- Admin-only bot command posts a public channel message with a WebApp button suitable for pinning.
+- Admin-only bot command posts a public channel message with an `Open` URL button suitable for pinning.
 - Ops runbook documents the command usage.
 
 Tasks:
 - Add `/post_tma` handling in `apps/server/src/bot/commands.ts` with `ADMIN_TELEGRAM_IDS` enforcement.
-- Add a channel helper to send a URL button using `WEB_APP_TMA_URL` (fallback `WEB_APP_URL`) and `PUBLIC_CHANNEL_ID`.
+- Add a channel helper to send a URL button using `WEB_APP_TMA_URL` and `PUBLIC_CHANNEL_ID`.
 - Update `docs/runbooks/ops.md` with the new command.
 
 Tests:
@@ -334,6 +334,40 @@ Tests:
 Acceptance:
 - `/post_tma` posts a channel message with an Open WebApp button for admins.
 - Non-admin callers receive a clear not-authorized response.
+
+### M17: Single-Service Cloud Run (Web + Worker)
+Deliverables:
+- Web service runs the worker loop in-process (`SERVICE_ROLE=all`) with max instances set to 1.
+- Separate worker service removed from deploy/runbooks.
+- Ops/deploy docs updated for single-service flow.
+
+Tasks:
+- Update `infra/gcp/deploy.sh` to deploy only `noetic-mirror-web` with `SERVICE_ROLE=all`, `SESSION_ID=public`, and max instances 1.
+- Update `docs/runbooks/deploy.md` and `docs/runbooks/ops.md` to remove worker service references.
+- Update architecture notes to reflect single-service deployment.
+- Delete the separate `noetic-mirror-worker` Cloud Run service.
+
+Tests:
+- Manual smoke: verify live stream still produces Researcher/Subject turns.
+
+Acceptance:
+- Only `noetic-mirror-web` exists in Cloud Run; no separate worker service.
+- Worker loop runs continuously inside the web service without port conflicts.
+
+### M18: TWA Flicker Mitigation
+Deliverables:
+- TWA disables heavy motion/blur layers that cause flicker on mobile.
+- UI remains readable and stable during scroll and streaming.
+
+Tasks:
+- Add a `tma` HTML class in `apps/web/src/App.tsx` when running inside Telegram.
+- Disable ambient animations and blend-heavy layers under `html.tma` in `apps/web/src/index.css`.
+
+Tests:
+- Manual smoke in Telegram: confirm no visible flicker during stream.
+
+Acceptance:
+- No visible flicker in Telegram WebApp while streaming turns.
 
 ### M17: Ethics + Community Copy Refresh
 Deliverables:
@@ -351,6 +385,25 @@ Tests:
 Acceptance:
 - Ethics modal provides multi-paragraph guidance covering consent, safety, data handling, and oversight.
 - Community modal includes https://t.me/noel_mirror and describes engagement channels in EN/RU.
+
+### M18: Luxe Motion + Lighting + Typography Readability
+Deliverables:
+- Advanced motion system with ambient lighting, surface sheens, and layered shadows.
+- Improved typography for readability across the WebApp.
+
+Tasks:
+- Update `apps/web/src/index.css` with new font imports, typography sizing/line-height, and motion tokens.
+- Add ambient lighting layers and animated sheens to the base layout and panels.
+- Enhance shadows and depth on cards, tabs, chips, and buttons while preserving contrast.
+- Ensure all animations respect prefers-reduced-motion.
+
+Tests:
+- Playwright E2E (headed) with visual inspection of motion, lighting, and typography.
+
+Acceptance:
+- UI motion feels premium and intentional without distracting from content.
+- Lighting and shadow layers add depth on cards/tabs without reducing legibility.
+- Typography reads comfortably on small screens and in dark mode.
 
 ## Tooling and Stack
 - Frontend: React 19 + Tailwind CSS (TMA).

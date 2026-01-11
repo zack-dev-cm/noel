@@ -51,11 +51,31 @@
   - Architecture: complete
   - Planning: complete
   - Development: complete
+- Channel pin label + TMA deeplink:
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
+- Single Cloud Run service (web + worker):
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
+- TWA flicker mitigation:
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
 - Ethics + community copy refresh:
   - Analysis (PRD/TZ): complete
   - Architecture: complete
   - Planning: complete
   - Development: complete
+- Luxe motion + lighting + typography readability refresh:
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: in progress
 
 ## Current Tasks
 - Update PRD/TZ/Architecture/Plan for mobile UX: complete
@@ -99,9 +119,21 @@
 - Update docs/config for channel URL button: complete
 - Implement URL-button fix + error handling for `/post_tma`: complete
 - Deploy updated services for channel URL button: complete
+- Run Playwright E2E + debug loop for channel URL button: pending (preferences.spec.ts timeout)
+- Update button label to `Open` + require WEB_APP_TMA_URL: complete
+- Deploy updated services for `Open` button + deeplink requirement: complete
+- Update PRD/TZ/Architecture/Plan for single Cloud Run service: complete
+- Deploy `noetic-mirror-web` with SERVICE_ROLE=all and max instances=1: complete
+- Delete `noetic-mirror-worker` service: complete
+- Fix TWA flicker (disable heavy animations in Telegram): complete
 - Update PRD/TZ/Architecture/Plan for ethics + community copy refresh: complete
 - Update Ethics/Community copy + main channel link: complete
+- Update PRD/TZ/Architecture/Plan for luxe motion + lighting + typography refresh: complete
+- Implement advanced motion, lighting, shadows, and typography readability across WebApp: complete
+- Run Playwright E2E + deploy/debug loop for luxe refresh: in progress
 
 ## Notes
-- Worker runs as a separate Cloud Run service (`noetic-mirror-worker`).
+- Worker loop runs inside `noetic-mirror-web` (`SERVICE_ROLE=all`, `WORKER_HTTP_ENABLED=false`).
+- Local Playwright E2E now passes after pre-creating `.playwright-artifacts-*` directories.
+- Prior prod E2E failures were caused by missing valid initData and local disk space (ENOSPC).
 - Open questions tracked in open_questions.md.
