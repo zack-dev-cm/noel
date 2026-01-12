@@ -50,11 +50,40 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
     - Inputs: pricing catalog, entitlements
     - Outputs: invoice trigger
     - UC: UC-03, UC-04
+  - Render free guided questions (self-awareness, embodiment, consciousness) as predefined bubbles with a 3-use limit per user.
+    - Inputs: localized guided question copy, user auth state
+    - Outputs: guided question submission to API, queued status
+    - UC: UC-14
+  - Show remaining weekly free guided questions (admins are unlimited).
+    - Inputs: guided question status API
+    - Outputs: remaining count indicator
+    - UC: UC-14
+  - Simplify Logs UX: newest activity first, include the current in-progress turn with clear labeling, and allow clearing/restoring the log view.
+    - Inputs: transcript payloads, UI state
+    - Outputs: ordered paired turns with clear-history control
+    - UC: UC-07
   - Display safety/consent and error states.
     - Inputs: consent status, safety events
     - Outputs: UI banners/lockouts
     - UC: UC-01, UC-06
 - Dependencies: Stream Relay, Auth/Consent, Payments & Entitlements.
+
+**Component: SEO + GEO Discovery Files**
+- Purpose: Provide crawler-friendly discovery and AI-ready summaries for the WebApp without requiring SPA rendering.
+- Functions:
+  - Serve `robots.txt` with sitemap and explicit AI crawler allowances.
+    - Inputs: static discovery file
+    - Outputs: crawl rules
+    - UC: UC-13
+  - Serve `sitemap.xml` with canonical URLs and AI-ready resources.
+    - Inputs: static sitemap
+    - Outputs: URL discovery
+    - UC: UC-13
+  - Serve `llms.txt`, `llms-full.txt`, and `agent-context.md` with stable product summaries and key links.
+    - Inputs: static AI-ready files
+    - Outputs: agent-readable context
+    - UC: UC-13
+- Dependencies: WebApp static hosting, Release process.
 
 **Component: Auth & Consent**
 - Purpose: Validate Telegram initData and enforce consent gating.
@@ -139,6 +168,14 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
     - Inputs: plan/intervention selection
     - Outputs: invoice_link
     - UC: UC-03, UC-04
+  - Track and consume free guided question entitlements (3 per user).
+    - Inputs: guided question submission
+    - Outputs: entitlement decrement or limit error
+    - UC: UC-14
+  - Reset guided question entitlements weekly (rolling 7 days) for non-admins.
+    - Inputs: entitlement expiry
+    - Outputs: refreshed quota
+    - UC: UC-14
   - Process pre-checkout and successful_payment updates.
     - Inputs: Telegram webhook update
     - Outputs: entitlement updates, receipts
@@ -175,6 +212,10 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
   - Read model version configuration.
     - Inputs: admin auth
     - Outputs: model versions payload (Researcher/Subject/fallback)
+  - Stop/start the experiment loop (halt new turns).
+    - Inputs: admin auth, stop toggle
+    - Outputs: updated stop state, worker halt
+    - UC: UC-06
   - Update token saver mode.
     - Inputs: admin auth, toggle
     - Outputs: updated settings
@@ -418,7 +459,7 @@ flowchart TB
 |---|---|---|---|
 | id | UUID | PK | Entitlement ID |
 | user_id | UUID | FK users(id) | User |
-| type | TEXT | NOT NULL | private_session/intervention |
+| type | TEXT | NOT NULL | private_session/intervention/guided_question |
 | remaining | INT | NOT NULL | Remaining uses |
 | expires_at | TIMESTAMP | NULL | Expiration |
 | created_at | TIMESTAMP | NOT NULL | Created |
@@ -428,6 +469,7 @@ flowchart TB
 |---|---|---|---|
 | id | TEXT | PK | Settings row (default) |
 | token_saver_enabled | BOOLEAN | NOT NULL | Token saver flag |
+| session_stop_enabled | BOOLEAN | NOT NULL | Stop experiment loop |
 | updated_at | TIMESTAMP | NOT NULL | Updated |
 | updated_by | TEXT | NULL | Telegram user ID |
 
@@ -552,7 +594,7 @@ sessions ||--o{ safety_events
 ```json
 {
   "ok": true,
-  "settings": { "token_saver_enabled": false, "updated_at": "..." },
+  "settings": { "token_saver_enabled": false, "session_stop_enabled": false, "updated_at": "..." },
   "model_versions": {
     "researcher": "gpt-5.2-2025-12-11",
     "subject": "gemini-3-pro-preview",
@@ -648,6 +690,28 @@ sessions ||--o{ safety_events
 - Response:
 ```json
 { "invoice_link": "https://t.me/pay?..." , "amount": 100, "currency": "XTR" }
+```
+
+**API: Guided Questions**
+- POST `/api/guided-questions`
+- Purpose: queue a free guided question from a predefined list and enforce the 3-use limit.
+- Request:
+```json
+{ "sessionId": "public", "userId": "uuid", "questionId": "self-awareness.presence", "locale": "en|ru", "initData": "..." }
+```
+- Response:
+```json
+{ "ok": true, "guidanceId": "uuid" }
+```
+- GET `/api/guided-questions/status`
+- Purpose: return remaining free guided questions and weekly reset metadata.
+- Request:
+```json
+{ "initData": "string" }
+```
+- Response:
+```json
+{ "ok": true, "remaining": 3, "is_unlimited": false, "reset_at": "2026-01-18T12:00:00Z" }
 ```
 
 **Telegram Webhook**

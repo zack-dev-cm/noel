@@ -393,6 +393,12 @@ textarea {
   color: var(--accent-researcher);
 }
 
+.chip--live {
+  border-color: rgba(31, 140, 123, 0.45);
+  background: rgba(31, 140, 123, 0.16);
+  color: var(--accent-live);
+}
+
 .chip-cta {
   border-color: rgba(194, 119, 69, 0.3);
   background: rgba(194, 119, 69, 0.16);
@@ -544,6 +550,12 @@ textarea {
   font-weight: 600;
 }
 
+.turn-meta-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .turn-block {
   padding: 12px 14px;
   border-radius: 18px;
@@ -562,10 +574,12 @@ textarea {
 
 .turn-block--researcher {
   border-left-color: var(--accent-researcher);
+  background: linear-gradient(180deg, rgba(47, 127, 112, 0.16), var(--surface));
 }
 
 .turn-block--subject {
   border-left-color: var(--accent-subject);
+  background: linear-gradient(180deg, rgba(194, 119, 69, 0.18), var(--surface));
 }
 
 .turn-label {
@@ -576,6 +590,14 @@ textarea {
   letter-spacing: 0.2em;
   color: var(--text);
   font-weight: 600;
+}
+
+.turn-block--researcher .turn-label {
+  color: var(--accent-researcher);
+}
+
+.turn-block--subject .turn-label {
+  color: var(--accent-subject);
 }
 
 .turn-tag {
@@ -722,6 +744,12 @@ textarea {
   color: var(--text);
   box-shadow: var(--shadow-edge);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.button-danger {
+  border-color: rgba(198, 85, 63, 0.45);
+  background: rgba(198, 85, 63, 0.18);
+  color: #7e3022;
 }
 
 .tier-button {

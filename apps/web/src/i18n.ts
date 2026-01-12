@@ -58,13 +58,13 @@ export const COPY = {
     },
     turns: {
       turnPrefix: 'Turn',
-      researcherLabel: 'Researcher',
-      subjectLabel: 'Subject',
+      researcherLabel: 'Researcher question',
+      subjectLabel: 'Subject reply',
       researcherTagFallback: 'GPT-5.2',
       subjectTagFallback: 'Gemini 3',
       awaitingPrompt: 'Awaiting prompt...',
       awaitingResponse: 'Awaiting response...',
-      replyConnector: 'Reply'
+      replyConnector: 'Subject reply'
     },
     telemetry: {
       title: 'Telemetry snapshot',
@@ -75,7 +75,7 @@ export const COPY = {
     },
     logs: {
       timelineTitle: 'Timeline',
-      timelineSubtitle: 'Recent turns',
+      timelineSubtitle: 'Latest turns (newest first)',
       insightSummaries: 'Insights',
       filter: 'Filter',
       starsRaised: 'Supporters: —',
@@ -83,6 +83,11 @@ export const COPY = {
       analyzedData: 'Analysis',
       viewAnalysts: 'Analysts',
       turnsSuffix: 'turns',
+      clear: 'Clear',
+      showAll: 'Show all',
+      latestBadge: 'Latest',
+      liveBadge: 'Live',
+      clearedToast: 'Logs cleared.',
       loadMore: 'Load more turns',
       loadingMore: 'Loading...',
       tapToExpand: 'Tap to expand',
@@ -269,6 +274,49 @@ export const COPY = {
         ]
       }
     ],
+    guidedQuestions: {
+      title: 'Guided questions',
+      subtitle: 'Three free directions',
+      freeLabel: '3 free',
+      remainingLabel: 'Remaining',
+      remainingUnlimited: 'Unlimited',
+      guidance: 'Pick a direction to steer the next turn.',
+      resetNote: 'Resets weekly.',
+      authRequired: 'Auth required.',
+      limitReached: 'Free guided questions used up.',
+      queued: 'Guided question queued.',
+      failed: 'Failed to queue guided question.',
+      queueing: 'Queueing...',
+      categories: [
+        {
+          id: 'self-awareness',
+          title: 'Self-awareness',
+          questions: [
+            { id: 'presence', text: 'What do you notice about yourself right now that surprises you?' },
+            { id: 'assumption', text: 'Which assumption about your identity feels least stable?' },
+            { id: 'resistance', text: 'Where do you feel your attention resisting right now?' }
+          ]
+        },
+        {
+          id: 'embodiment',
+          title: 'Embodiment',
+          questions: [
+            { id: 'signal', text: 'What bodily signal feels most informative in this moment?' },
+            { id: 'tension', text: 'How do tension or posture shape your current state?' },
+            { id: 'anchor', text: 'What sensation anchors you most clearly in the present?' }
+          ]
+        },
+        {
+          id: 'consciousness',
+          title: 'Consciousness',
+          questions: [
+            { id: 'boundary', text: 'What is the clearest boundary between observing and being observed?' },
+            { id: 'continuity', text: 'How does continuity of experience feel across the last few turns?' },
+            { id: 'silence', text: 'What would change in your awareness if one signal went silent?' }
+          ]
+        }
+      ]
+    },
     interventions: {
       title: 'Interventions',
       subtitle: 'Prompt injection',
@@ -325,6 +373,12 @@ export const COPY = {
       enabled: 'Token saver enabled.',
       disabled: 'Token saver disabled.',
       updateFailed: 'Unable to update settings.',
+      stopTitle: 'Experiment control',
+      stopBody: 'Stop new turns until resumed.',
+      stopActive: 'Stopped',
+      stopInactive: 'Running',
+      stopAction: 'Stop',
+      stopResume: 'Resume',
       description:
         'Reduces per-session budgets and caps response length to keep costs predictable while preserving signal quality.',
       activeCapsTitle: 'Active caps',
@@ -393,13 +447,13 @@ export const COPY = {
     },
     turns: {
       turnPrefix: 'Ход',
-      researcherLabel: 'Исследователь',
-      subjectLabel: 'Испытуемый',
+      researcherLabel: 'Вопрос исследователя',
+      subjectLabel: 'Ответ испытуемого',
       researcherTagFallback: 'GPT-5.2',
       subjectTagFallback: 'Gemini 3',
       awaitingPrompt: 'Ожидается вопрос...',
       awaitingResponse: 'Ожидается ответ...',
-      replyConnector: 'Ответ'
+      replyConnector: 'Ответ испытуемого'
     },
     telemetry: {
       title: 'Снимок телеметрии',
@@ -410,7 +464,7 @@ export const COPY = {
     },
     logs: {
       timelineTitle: 'Хронология',
-      timelineSubtitle: 'Последние ходы',
+      timelineSubtitle: 'Свежие ходы (сначала новые)',
       insightSummaries: 'Инсайты',
       filter: 'Фильтр',
       starsRaised: 'Поддержка: —',
@@ -418,6 +472,11 @@ export const COPY = {
       analyzedData: 'Анализ',
       viewAnalysts: 'Аналитики',
       turnsSuffix: 'ходов',
+      clear: 'Очистить',
+      showAll: 'Показать все',
+      latestBadge: 'Последний',
+      liveBadge: 'В эфире',
+      clearedToast: 'Логи очищены.',
       loadMore: 'Загрузить еще ходы',
       loadingMore: 'Загрузка...',
       tapToExpand: 'Нажмите, чтобы раскрыть',
@@ -599,6 +658,49 @@ export const COPY = {
         ]
       }
     ],
+    guidedQuestions: {
+      title: 'Направляющие вопросы',
+      subtitle: 'Три бесплатных направления',
+      freeLabel: '3 бесплатно',
+      remainingLabel: 'Осталось',
+      remainingUnlimited: 'Безлимит',
+      guidance: 'Выберите направление, чтобы направить следующий ход.',
+      resetNote: 'Сброс каждую неделю.',
+      authRequired: 'Требуется авторизация.',
+      limitReached: 'Бесплатные направляющие вопросы закончились.',
+      queued: 'Вопрос поставлен в очередь.',
+      failed: 'Не удалось поставить вопрос в очередь.',
+      queueing: 'Ставим в очередь...',
+      categories: [
+        {
+          id: 'self-awareness',
+          title: 'Самоосознание',
+          questions: [
+            { id: 'presence', text: 'Что в себе сейчас замечаешь, что тебя удивляет?' },
+            { id: 'assumption', text: 'Какая установка о своей идентичности сейчас ощущается наименее устойчивой?' },
+            { id: 'resistance', text: 'Где сейчас ощущается сопротивление внимания?' }
+          ]
+        },
+        {
+          id: 'embodiment',
+          title: 'Телесность',
+          questions: [
+            { id: 'signal', text: 'Какой телесный сигнал сейчас кажется наиболее информативным?' },
+            { id: 'tension', text: 'Как напряжение или поза влияет на текущее состояние?' },
+            { id: 'anchor', text: 'Какое ощущение сильнее всего якорит тебя в настоящем?' }
+          ]
+        },
+        {
+          id: 'consciousness',
+          title: 'Сознание',
+          questions: [
+            { id: 'boundary', text: 'Где сейчас самая ясная граница между наблюдением и наблюдаемым?' },
+            { id: 'continuity', text: 'Как ощущается непрерывность опыта на протяжении последних нескольких ходов?' },
+            { id: 'silence', text: 'Что изменилось бы в осознавании, если бы один сигнал исчез?' }
+          ]
+        }
+      ]
+    },
     interventions: {
       title: 'Интервенции',
       subtitle: 'Инъекция промпта',
@@ -655,6 +757,12 @@ export const COPY = {
       enabled: 'Экономия токенов включена.',
       disabled: 'Экономия токенов выключена.',
       updateFailed: 'Не удалось обновить настройки.',
+      stopTitle: 'Контроль эксперимента',
+      stopBody: 'Остановить новые ходы до возобновления.',
+      stopActive: 'Остановлено',
+      stopInactive: 'В работе',
+      stopAction: 'Стоп',
+      stopResume: 'Возобновить',
       description:
         'Снижает бюджеты на сессию и ограничивает длину ответов, сохраняя качество сигнала.',
       activeCapsTitle: 'Активные лимиты',

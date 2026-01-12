@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import WebApp from '@twa-dev/sdk';
 import AdminPanel from './components/AdminPanel';
 import BreathWidget from './components/BreathWidget';
+import GuidedQuestions from './components/GuidedQuestions';
 import Interventions from './components/Interventions';
 import StarsPanel from './components/StarsPanel';
 import { useStream, type StreamEvent } from './hooks/useStream';
@@ -39,6 +40,10 @@ type Turn = {
   answers: StreamEvent[];
 };
 
+type BuildTurnsOptions = {
+  includeLatestIncomplete?: boolean;
+};
+
 const stagger = (index: number) => ({ '--delay': `${index * 90}ms` } as CSSProperties);
 
 const formatMetric = (value: number | undefined, unit = '', fallback = 'n/a') => {
@@ -55,26 +60,54 @@ const formatTimestamp = (ts: string | undefined, locale: Locale) => {
   return parsed.toLocaleTimeString(resolvedLocale, { hour: '2-digit', minute: '2-digit' });
 };
 
-const buildTurns = (events: StreamEvent[]) => {
+const buildTurns = (events: StreamEvent[], options: BuildTurnsOptions = {}) => {
   const turns: Turn[] = [];
   let current: Turn | null = null;
+  const includeLatestIncomplete = options.includeLatestIncomplete ?? false;
+
+  const finalizeTurn = (forceInclude = false) => {
+    if (!current) {
+      return;
+    }
+    if (current.question && (current.answers.length || forceInclude)) {
+      turns.push(current);
+    }
+    current = null;
+  };
 
   for (const event of events) {
     if (event.role === 'researcher') {
+      finalizeTurn();
       current = { id: event.seq, question: event, answers: [] };
-      turns.push(current);
       continue;
     }
     if (event.role === 'subject') {
       if (!current) {
-        current = { id: event.seq, answers: [] };
-        turns.push(current);
+        continue;
       }
       current.answers.push(event);
     }
   }
 
+  finalizeTurn(includeLatestIncomplete);
+
   return turns;
+};
+
+const getTurnLastSeq = (turn: Turn) => {
+  const answerSeq = turn.answers.reduce((max, answer) => Math.max(max, answer.seq), 0);
+  return Math.max(turn.question?.seq ?? 0, answerSeq);
+};
+
+const orderTurns = (turns: Turn[]) =>
+  [...turns].sort((a, b) => {
+    const delta = getTurnLastSeq(b) - getTurnLastSeq(a);
+    return delta !== 0 ? delta : b.id - a.id;
+  });
+
+const getLastCompletedSeq = (events: StreamEvent[]) => {
+  const completeTurns = buildTurns(events);
+  return completeTurns.reduce((max, turn) => Math.max(max, getTurnLastSeq(turn)), 0);
 };
 
 const mergeEvents = (base: StreamEvent[], extra: StreamEvent[]) => {
@@ -181,6 +214,8 @@ const TurnCard = ({
   index,
   copy,
   locale,
+  statusLabel,
+  statusVariant,
   isExpandable,
   isExpanded,
   onToggle
@@ -189,6 +224,8 @@ const TurnCard = ({
   index: number;
   copy: Copy;
   locale: Locale;
+  statusLabel?: string;
+  statusVariant?: 'latest' | 'live';
   isExpandable?: boolean;
   isExpanded?: boolean;
   onToggle?: (turnId: number) => void;
@@ -206,6 +243,8 @@ const TurnCard = ({
   ]
     .filter(Boolean)
     .join(' ');
+  const statusClassName =
+    statusVariant === 'live' ? 'chip chip--live' : statusLabel ? 'chip chip--active' : 'chip';
 
   return (
     <div
@@ -235,7 +274,10 @@ const TurnCard = ({
         <span className="turn-id">
           {copy.turns.turnPrefix} {turn.id}
         </span>
-        {timestamp && <span className="turn-time">{timestamp}</span>}
+        <div className="turn-meta-right">
+          {statusLabel && <span className={statusClassName}>{statusLabel}</span>}
+          {timestamp && <span className="turn-time">{timestamp}</span>}
+        </div>
       </div>
       <div className="turn-block turn-block--researcher">
         <div className="turn-label-row">
@@ -304,6 +346,7 @@ export default function App() {
   const [transcriptHasMore, setTranscriptHasMore] = useState(true);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptLoaded, setTranscriptLoaded] = useState(false);
+  const [logCutoffSeq, setLogCutoffSeq] = useState<number | null>(null);
   const apiBase = import.meta.env.VITE_API_BASE_URL || '';
   const copy = COPY[locale];
   const contributors = copy.contributors;
@@ -473,11 +516,16 @@ export default function App() {
   }, [copy.tabs, isOperator]);
 
   const streamEvents = useStream('public', apiBase);
-  const logEvents = useMemo(
+  const mergedLogEvents = useMemo(
     () => (transcriptLoaded ? mergeEvents(transcriptEvents, streamEvents) : streamEvents),
     [streamEvents, transcriptEvents, transcriptLoaded]
   );
-  const telemetryEvents = logEvents;
+  const logEvents = useMemo(
+    () =>
+      logCutoffSeq === null ? mergedLogEvents : mergedLogEvents.filter((event) => event.seq > logCutoffSeq),
+    [mergedLogEvents, logCutoffSeq]
+  );
+  const telemetryEvents = mergedLogEvents;
   const subjectTelemetryEvents = telemetryEvents.filter((event) => event.role === 'subject');
   const latestTelemetry = [...telemetryEvents]
     .reverse()
@@ -530,12 +578,22 @@ export default function App() {
   const streamStatusKey = streamEvents.length ? 'live' : 'standby';
   const streamStatus = streamStatusKey === 'live' ? copy.session.statusLive : copy.session.statusStandby;
 
-  const liveTurns = useMemo(() => buildTurns(streamEvents), [streamEvents]);
-  const logTurns = useMemo(() => buildTurns(logEvents), [logEvents]);
+  const allTurns = useMemo(() => buildTurns(mergedLogEvents, { includeLatestIncomplete: true }), [mergedLogEvents]);
+  const liveTurns = useMemo(
+    () => orderTurns(buildTurns(streamEvents, { includeLatestIncomplete: true })),
+    [streamEvents]
+  );
+  const logTurns = useMemo(
+    () => orderTurns(buildTurns(logEvents, { includeLatestIncomplete: true })),
+    [logEvents]
+  );
   const hasLiveTurns = liveTurns.length > 0;
   const hasLogTurns = logTurns.length > 0;
-  const livePreviewTurns = liveTurns.slice(-2);
-  const totalTurns = Math.max(liveTurns.length, logTurns.length);
+  const livePreviewTurns = liveTurns.slice(0, 2);
+  const totalTurns = Math.max(allTurns.length, liveTurns.length);
+  const showInsights = hasLogTurns && hasInsights;
+  const showDiagnostics = hasLogTurns && diagnosticsItems.length > 0;
+  const showAnalysis = hasLogTurns && hasAnalysis;
 
   const toggleTurnExpanded = (turnId: number) => {
     setExpandedTurnIds((prev) => {
@@ -549,8 +607,31 @@ export default function App() {
     });
   };
 
+  const clearLogHistory = () => {
+    const lastCompletedSeq = getLastCompletedSeq(mergedLogEvents);
+    setLogCutoffSeq(lastCompletedSeq);
+    setTranscriptEvents([]);
+    setTranscriptCursor(lastCompletedSeq);
+    setTranscriptHasMore(false);
+    setTranscriptLoaded(true);
+    setExpandedTurnIds(new Set());
+    setToast(copy.logs.clearedToast);
+  };
+
+  const restoreLogHistory = () => {
+    setLogCutoffSeq(null);
+    setTranscriptEvents([]);
+    setTranscriptCursor(0);
+    setTranscriptHasMore(true);
+    setTranscriptLoaded(false);
+    setExpandedTurnIds(new Set());
+  };
+
   const fetchTranscriptPage = async (reset = false) => {
     if (transcriptLoading) {
+      return;
+    }
+    if (logCutoffSeq !== null) {
       return;
     }
     if (!reset && !transcriptHasMore) {
@@ -765,11 +846,25 @@ export default function App() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
-              <Interventions apiBase={apiBase} sessionId="public" userId={userId} copy={copy.interventions} />
+              <div className="space-y-4">
+                <div className="reveal" style={stagger(3)}>
+                  <GuidedQuestions
+                    apiBase={apiBase}
+                    sessionId="public"
+                    userId={userId}
+                    locale={locale}
+                    initData={initData}
+                    copy={copy.guidedQuestions}
+                  />
+                </div>
+                <div className="reveal" style={stagger(4)}>
+                  <Interventions apiBase={apiBase} sessionId="public" userId={userId} copy={copy.interventions} />
+                </div>
+              </div>
               <button
                 type="button"
                 className="panel panel-cta flex flex-col items-start justify-between gap-4 p-5 text-left reveal"
-                style={stagger(3)}
+                style={stagger(5)}
                 onClick={() => setTab('stars')}
               >
                 <div>
@@ -786,29 +881,53 @@ export default function App() {
         {tab === 'logs' && (
           <section className="space-y-4">
             <div className="panel p-5 reveal" style={stagger(0)}>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase text-slate-500">{copy.logs.timelineTitle}</p>
                   <p className="mt-1 text-base font-semibold">{copy.logs.timelineSubtitle}</p>
                 </div>
-                <span className="chip">
-                  {logTurns.length} {copy.logs.turnsSuffix}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="chip">
+                    {logTurns.length} {copy.logs.turnsSuffix}
+                  </span>
+                  {logCutoffSeq === null ? (
+                    <button
+                      type="button"
+                      className="chip"
+                      onClick={clearLogHistory}
+                      disabled={!mergedLogEvents.length}
+                    >
+                      {copy.logs.clear}
+                    </button>
+                  ) : (
+                    <button type="button" className="chip chip--active" onClick={restoreLogHistory}>
+                      {copy.logs.showAll}
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="mt-4 grid gap-4">
                 {hasLogTurns ? (
-                  logTurns.map((turn, index) => (
-                    <TurnCard
-                      key={`log-${turn.id}`}
-                      turn={turn}
-                      index={index}
-                      copy={copy}
-                      locale={locale}
-                      isExpandable
-                      isExpanded={expandedTurnIds.has(turn.id)}
-                      onToggle={toggleTurnExpanded}
-                    />
-                  ))
+                  logTurns.map((turn, index) => {
+                    const isCurrent = turn.answers.length === 0;
+                    const isLatest = index === 0;
+                    const statusLabel = isCurrent ? copy.logs.liveBadge : isLatest ? copy.logs.latestBadge : undefined;
+                    const statusVariant = isCurrent ? 'live' : isLatest ? 'latest' : undefined;
+                    return (
+                      <TurnCard
+                        key={`log-${turn.id}`}
+                        turn={turn}
+                        index={index}
+                        copy={copy}
+                        locale={locale}
+                        statusLabel={statusLabel}
+                        statusVariant={statusVariant}
+                        isExpandable
+                        isExpanded={expandedTurnIds.has(turn.id)}
+                        onToggle={toggleTurnExpanded}
+                      />
+                    );
+                  })
                 ) : (
                   <div className="panel panel-subtle p-4 text-sm">
                     <p className="font-semibold">{copy.logs.emptyTitle}</p>
@@ -816,7 +935,7 @@ export default function App() {
                   </div>
                 )}
               </div>
-              {transcriptLoaded && transcriptHasMore && (
+              {transcriptLoaded && transcriptHasMore && logCutoffSeq === null && (
                 <div className="mt-4 flex justify-center">
                   <button
                     type="button"
@@ -830,86 +949,74 @@ export default function App() {
               )}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="panel p-4 reveal" style={stagger(1)}>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold">{copy.logs.insightSummaries}</h3>
+            {(showInsights || showDiagnostics) && (
+              <div className="grid gap-4 md:grid-cols-2">
+                {showInsights && (
+                  <div className="panel p-4 reveal" style={stagger(1)}>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold">{copy.logs.insightSummaries}</h3>
+                      <button
+                        type="button"
+                        className="chip"
+                        onClick={() => setToast(copy.logs.filterToast)}
+                      >
+                        {copy.logs.filter}
+                      </button>
+                    </div>
+                    <div className="mt-3 space-y-3">
+                      {insights.map((insight) => (
+                        <div key={insight.title} className="insight-card">
+                          <h4 className="text-sm font-semibold">{insight.title}</h4>
+                          <p className="mt-2 text-sm text-slate-600">{insight.summary}</p>
+                          <p className="mt-3 text-xs text-amber-600">{copy.logs.starsRaised}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {showDiagnostics && (
+                  <div className="panel p-4 reveal" style={stagger(2)}>
+                    <h3 className="text-sm font-semibold">{copy.logs.diagnosticsSnapshot}</h3>
+                    <div className="mt-4 grid gap-3">
+                      {diagnosticsItems.map((item) => (
+                        <div key={item.label} className="metric">
+                          <span>{item.label}</span>
+                          <div className="text-right">
+                            <strong>{item.value}</strong>
+                            <p className="text-xs text-slate-500">{item.hint}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {showAnalysis && (
+              <div className="panel analysis-card p-4 reveal" style={stagger(3)}>
+                <div className="flex items-center justify-between text-xs uppercase text-slate-500">
+                  <span>{copy.logs.analyzedData}</span>
                   <button
                     type="button"
                     className="chip"
-                    onClick={() => setToast(copy.logs.filterToast)}
+                    onClick={() => setToast(copy.logs.analystsToast)}
                   >
-                    {copy.logs.filter}
+                    {copy.logs.viewAnalysts}
                   </button>
                 </div>
-                <div className="mt-3 space-y-3">
-                  {hasLogTurns && hasInsights ? (
-                    insights.map((insight) => (
-                      <div key={insight.title} className="insight-card">
-                        <h4 className="text-sm font-semibold">{insight.title}</h4>
-                        <p className="mt-2 text-sm text-slate-600">{insight.summary}</p>
-                        <p className="mt-3 text-xs text-amber-600">{copy.logs.starsRaised}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="panel panel-subtle p-4 text-sm text-slate-600">
-                      {copy.logs.emptyInsights}
-                    </div>
-                  )}
-                </div>
+                <pre className="analysis-code">{analysis.code}</pre>
+                <p className="analysis-body">
+                  <span className="analysis-underline">{analysis.summary}</span>
+                </p>
+                <ul className="analysis-quotes">
+                  {analysis.quotes.map((quote) => (
+                    <li key={quote}>{quote}</li>
+                  ))}
+                </ul>
               </div>
-
-              <div className="panel p-4 reveal" style={stagger(2)}>
-                <h3 className="text-sm font-semibold">{copy.logs.diagnosticsSnapshot}</h3>
-                <div className="mt-4 grid gap-3">
-                  {diagnosticsItems.length ? (
-                    diagnosticsItems.map((item) => (
-                      <div key={item.label} className="metric">
-                        <span>{item.label}</span>
-                        <div className="text-right">
-                          <strong>{item.value}</strong>
-                          <p className="text-xs text-slate-500">{item.hint}</p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="panel panel-subtle p-4 text-sm text-slate-600">
-                      {copy.logs.emptyDiagnostics}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="panel analysis-card p-4 reveal" style={stagger(3)}>
-              <div className="flex items-center justify-between text-xs uppercase text-slate-500">
-                <span>{copy.logs.analyzedData}</span>
-                <button
-                  type="button"
-                  className="chip"
-                  onClick={() => setToast(copy.logs.analystsToast)}
-                >
-                  {copy.logs.viewAnalysts}
-                </button>
-              </div>
-                  {hasLogTurns && hasAnalysis ? (
-                    <>
-                      <pre className="analysis-code">{analysis.code}</pre>
-                      <p className="analysis-body">
-                        <span className="analysis-underline">{analysis.summary}</span>
-                      </p>
-                      <ul className="analysis-quotes">
-                        {analysis.quotes.map((quote) => (
-                          <li key={quote}>{quote}</li>
-                        ))}
-                      </ul>
-                    </>
-              ) : (
-                <div className="panel panel-subtle p-4 text-sm text-slate-600">
-                  {copy.logs.emptyAnalysis}
-                </div>
-              )}
-            </div>
+            )}
           </section>
         )}
 

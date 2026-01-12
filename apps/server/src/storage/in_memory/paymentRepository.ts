@@ -18,7 +18,14 @@ export class InMemoryPaymentRepository implements PaymentRepository {
   }
 
   async getEntitlements(userId: string): Promise<EntitlementRecord[]> {
-    return this.store.entitlements.get(userId) ?? [];
+    const list = this.store.entitlements.get(userId) ?? [];
+    const now = Date.now();
+    return list.filter((item) => {
+      if (!item.expires_at) {
+        return true;
+      }
+      return new Date(item.expires_at).getTime() > now;
+    });
   }
 
   async addEntitlement(record: EntitlementRecord): Promise<void> {
@@ -29,7 +36,16 @@ export class InMemoryPaymentRepository implements PaymentRepository {
 
   async consumeEntitlement(userId: string, type: EntitlementRecord['type']): Promise<boolean> {
     const list = this.store.entitlements.get(userId) ?? [];
-    const item = list.find((entry) => entry.type === type && entry.remaining > 0);
+    const now = Date.now();
+    const item = list.find((entry) => {
+      if (entry.type !== type || entry.remaining <= 0) {
+        return false;
+      }
+      if (!entry.expires_at) {
+        return true;
+      }
+      return new Date(entry.expires_at).getTime() > now;
+    });
     if (!item) {
       return false;
     }

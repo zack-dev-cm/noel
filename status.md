@@ -76,15 +76,41 @@
   - Architecture: complete
   - Planning: complete
   - Development: in progress
+- SEO + GEO discovery files:
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
+- Free guided questions (self-awareness + embodiment + consciousness):
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
+- Logs hygiene + admin stop control:
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
+- Logs readability + latest visibility:
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
+- Admin start control + admin UI logging/progress:
+  - Analysis (PRD/TZ): in progress
+  - Architecture: pending
+  - Planning: pending
+  - Development: pending
 
 ## Current Tasks
+- Review/refactor/debug/commit/push request: complete
 - Update PRD/TZ/Architecture/Plan for mobile UX: complete
 - Implement mobile-native UI + turn pairing + bottom nav: complete
 - Update Playwright assertions and run local E2E: complete
 - Deploy + Playwright prod E2E + log check: complete
 - Update PRD/TZ/Architecture/Plan for paper materiality + custom fonts: complete
 - Implement paper-textured UI + custom typography: complete
-- Run Playwright E2E + visual inspection for paper refresh: pending
+- Run Playwright E2E + visual inspection for paper refresh: complete
 - Update PRD/TZ/Architecture/Plan for language + theme + subject debug: complete
 - Implement EN/RU + theme toggles + Subject logging/fix: complete
 - Deploy + E2E debug loop for subject replies: complete
@@ -119,7 +145,7 @@
 - Update docs/config for channel URL button: complete
 - Implement URL-button fix + error handling for `/post_tma`: complete
 - Deploy updated services for channel URL button: complete
-- Run Playwright E2E + debug loop for channel URL button: pending (preferences.spec.ts timeout)
+- Run Playwright E2E + debug loop for channel URL button: complete
 - Update button label to `Open` + require WEB_APP_TMA_URL: complete
 - Deploy updated services for `Open` button + deeplink requirement: complete
 - Update PRD/TZ/Architecture/Plan for single Cloud Run service: complete
@@ -130,10 +156,29 @@
 - Update Ethics/Community copy + main channel link: complete
 - Update PRD/TZ/Architecture/Plan for luxe motion + lighting + typography refresh: complete
 - Implement advanced motion, lighting, shadows, and typography readability across WebApp: complete
-- Run Playwright E2E + deploy/debug loop for luxe refresh: in progress
+- Run Playwright E2E + deploy/debug loop for luxe refresh: complete
+- Update PRD/TZ/Architecture/Plan for SEO + GEO discovery files: complete
+- Add SEO/GEO discovery files (robots, sitemap, llms) to WebApp public assets: complete
+- Verify deployed discovery files with curl after deploy: complete
+- Update PRD/TZ/Architecture/Plan for free guided questions: complete
+- Implement guided questions UI + API + entitlements: complete
+- Run Playwright E2E + deploy/debug loop for guided questions: complete
+- Update weekly reset + admin unlimited + remaining indicator: complete
+- Run Playwright E2E + deploy/debug loop for weekly reset: complete
+- Update PRD/TZ/Architecture/Plan for logs hygiene + admin stop: complete
+- Implement log cleanup + newest-first + admin stop: complete
+- Run Playwright E2E + deploy/debug loop for logs + admin stop: complete
+- Update PRD/TZ/Architecture/Plan for logs readability + latest visibility: complete
+- Implement log readability + current/latest visibility fixes: complete
+- Run Playwright E2E + deploy/debug loop for logs readability: complete
+- Update PRD/TZ/Architecture/Plan for admin start control + admin UI logging/progress: in progress
+- Implement admin start control + admin logging/progress UI: blocked (requirements pending)
 
 ## Notes
 - Worker loop runs inside `noetic-mirror-web` (`SERVICE_ROLE=all`, `WORKER_HTTP_ENABLED=false`).
+- Headed Playwright E2E ran locally and against prod after deploy; no screenshots/traces generated (config only-on-failure).
+- Discovery files verified via curl on `https://noetic-mirror-web-zlvmfsrm6a-ue.a.run.app`.
 - Local Playwright E2E now passes after pre-creating `.playwright-artifacts-*` directories.
 - Prior prod E2E failures were caused by missing valid initData and local disk space (ENOSPC).
 - Open questions tracked in open_questions.md.
+- Local disk cleanup: cleared user caches/logs to free ~5.5Gi; `df -h /` now shows ~4.8Gi available.

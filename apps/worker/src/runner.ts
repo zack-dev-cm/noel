@@ -19,6 +19,7 @@ export interface RunnerOptions {
 
 const trackerBySession = new Map<string, UsageTracker>();
 const budgetExceededSessions = new Set<string>();
+const stoppedSessions = new Set<string>();
 
 function resolveBooleanEnv(value: string | undefined, defaultValue: boolean) {
   if (value === undefined) {
@@ -57,6 +58,21 @@ function resolveHardLimitReason(options: {
 export async function runResearcherSession(options: RunnerOptions) {
   const publisher = createStreamPublisher();
   const settings = await fetchAdminSettings();
+  if (settings?.session_stop_enabled) {
+    if (!stoppedSessions.has(options.sessionId)) {
+      stoppedSessions.add(options.sessionId);
+      logEvent('session_paused_by_admin', { session_id: options.sessionId });
+      const event: StreamEvent = {
+        seq: 0,
+        role: 'system',
+        content: 'System: Session paused by admin control.',
+        ts: new Date().toISOString()
+      };
+      await publisher.publish(options.sessionId, event);
+    }
+    return;
+  }
+  stoppedSessions.delete(options.sessionId);
   const sessionSettings = await fetchSessionSettings(options.sessionId);
   const tokenSaver = settings?.token_saver_enabled ?? false;
   const saverMultiplier = Number(process.env.TOKEN_SAVER_MULTIPLIER || 0.6);

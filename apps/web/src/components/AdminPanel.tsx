@@ -10,6 +10,7 @@ interface AdminPanelProps {
 
 type AdminSettings = {
   token_saver_enabled: boolean;
+  session_stop_enabled: boolean;
   updated_at?: string;
 };
 
@@ -54,7 +55,7 @@ export default function AdminPanel({ apiBase, initData, copy }: AdminPanelProps)
     void load();
   }, [apiBase, resolvedInitData]);
 
-  const toggleSaver = async () => {
+  const updateSettings = async (next: Partial<AdminSettings>) => {
     if (!resolvedInitData || !settings) {
       setStatus(copy.missingAuth);
       return;
@@ -65,7 +66,13 @@ export default function AdminPanel({ apiBase, initData, copy }: AdminPanelProps)
       const response = await fetch(`${apiBase}/api/admin/settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData: resolvedInitData, tokenSaverEnabled: !settings.token_saver_enabled })
+        body: JSON.stringify({
+          initData: resolvedInitData,
+          tokenSaverEnabled:
+            typeof next.token_saver_enabled === 'boolean' ? next.token_saver_enabled : settings.token_saver_enabled,
+          sessionStopEnabled:
+            typeof next.session_stop_enabled === 'boolean' ? next.session_stop_enabled : settings.session_stop_enabled
+        })
       });
       if (!response.ok) {
         throw new Error('update_failed');
@@ -73,7 +80,11 @@ export default function AdminPanel({ apiBase, initData, copy }: AdminPanelProps)
       const payload = (await response.json()) as { settings?: AdminSettings; model_versions?: ModelVersions };
       if (payload.settings) {
         setSettings(payload.settings);
-        setStatus(payload.settings.token_saver_enabled ? copy.enabled : copy.disabled);
+        if (typeof next.session_stop_enabled === 'boolean') {
+          setStatus(payload.settings.session_stop_enabled ? copy.stopActive : copy.stopInactive);
+        } else if (typeof next.token_saver_enabled === 'boolean') {
+          setStatus(payload.settings.token_saver_enabled ? copy.enabled : copy.disabled);
+        }
       }
       if (payload.model_versions) {
         setModelVersions(payload.model_versions);
@@ -83,6 +94,14 @@ export default function AdminPanel({ apiBase, initData, copy }: AdminPanelProps)
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleSaver = async () => {
+    await updateSettings({ token_saver_enabled: !settings?.token_saver_enabled });
+  };
+
+  const toggleStop = async () => {
+    await updateSettings({ session_stop_enabled: !settings?.session_stop_enabled });
   };
 
   return (
@@ -103,9 +122,7 @@ export default function AdminPanel({ apiBase, initData, copy }: AdminPanelProps)
           {settings?.token_saver_enabled ? copy.toggleOn : copy.toggleOff}
         </button>
       </div>
-      <p className="mt-3 text-sm text-slate-600">
-        {copy.description}
-      </p>
+      <p className="mt-3 text-sm text-slate-600">{copy.description}</p>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <div className="panel panel-subtle p-3">
           <p className="text-xs uppercase text-slate-500">{copy.activeCapsTitle}</p>
@@ -115,6 +132,20 @@ export default function AdminPanel({ apiBase, initData, copy }: AdminPanelProps)
           <p className="text-xs uppercase text-slate-500">{copy.saverCapsTitle}</p>
           <p className="mt-1 text-sm text-slate-600">{copy.saverCapsBody}</p>
         </div>
+      </div>
+      <div className="mt-4 flex items-center justify-between rounded-2xl border px-4 py-3 text-sm">
+        <div>
+          <p className="text-xs uppercase text-slate-500">{copy.stopTitle}</p>
+          <p className="mt-1 text-sm text-slate-600">{copy.stopBody}</p>
+        </div>
+        <button
+          type="button"
+          className={`button-ghost ${settings?.session_stop_enabled ? 'button-danger' : ''}`}
+          onClick={toggleStop}
+          disabled={loading || !settings}
+        >
+          {settings?.session_stop_enabled ? copy.stopResume : copy.stopAction}
+        </button>
       </div>
       {modelVersions && (
         <div className="mt-4 panel panel-subtle p-3">

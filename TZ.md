@@ -214,6 +214,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - ✅ Kill switch immediately stops generation.
 - ✅ Decompression sequence is logged and streamed.
 - ✅ Admin UI shows Researcher/Subject model versions (fallback shown only when configured).
+- ✅ Admin UI provides a stop control that halts new turns until re-enabled.
 
 ### UC-07: Session replay and resume
 **Actors:**
@@ -239,8 +240,10 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 **Acceptance criteria:**
 - ✅ Sequence IDs allow replay and resume.
 - ✅ Transcript access is scoped to user entitlements.
-- ✅ Transcript view preserves turn pairing (Researcher prompt with Subject reply).
+- ✅ Transcript view preserves turn pairing (Researcher prompt with Subject reply) and shows the current in-progress turn with a clear placeholder.
 - ✅ Transcript cards expand on tap to show full text with easy navigation.
+- ✅ Transcript list shows newest turns first (freshest activity on top).
+- ✅ User can clear the log view (history hidden until new pairs arrive) and restore full history on demand.
 
 ### UC-08: Subject breath telemetry
 **Actors:**
@@ -404,6 +407,71 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - ✅ Layered shadows add depth on cards, tabs, chips, and panels without lowering contrast.
 - ✅ About screen actions are interactive (links or immediate feedback), no dead buttons.
 - ✅ Ethics and Community content is detailed, localized (EN/RU), and includes the main Telegram channel link.
+
+### UC-13: SEO and GEO discovery files
+**Actors:**
+- Search engine crawler
+- AI agent (LLM crawler)
+- System (WebApp static hosting)
+
+**Preconditions:**
+- The WebApp is deployed and publicly accessible.
+
+**Main scenario:**
+1. Crawler requests `/robots.txt`.
+2. System returns allow rules and a sitemap link.
+3. Crawler fetches `/sitemap.xml` and discovers canonical URLs plus AI-ready resources.
+4. AI agent requests `/llms.txt` and follows links to `/llms-full.txt` and `/agent-context.md`.
+
+**Alternative scenarios:**
+- **A1: base URL changes (step 2/3)**  
+  1. Files are updated to reflect the new canonical base URL.  
+
+**Postconditions:**
+- Crawlers can discover the WebApp and AI-ready summaries without rendering the SPA.
+
+**Acceptance criteria:**
+- ✅ `robots.txt` is served at the web root and explicitly allows AI crawlers.
+- ✅ `sitemap.xml` includes the canonical WebApp URL and AI-ready resource URLs.
+- ✅ `llms.txt`, `llms-full.txt`, and `agent-context.md` are available at the web root with stable summaries and key links.
+
+### UC-14: Free guided questions (self-awareness, embodiment, consciousness)
+**Actors:**
+- User (observer/sponsor)
+- System (WebApp + API)
+
+**Preconditions:**
+- User is authenticated and consented.
+- A public session is active.
+
+**Main сценарий:**
+1. User opens the Live dashboard.
+2. User selects one of three directions: self-awareness, embodiment, or consciousness.
+3. User taps a predefined question bubble.
+4. WebApp sends a guided-question request (sessionId, userId, questionId, locale).
+5. Backend validates the question against the predefined list and checks free quota.
+6. Backend enqueues the prompt for the next turn and returns success.
+7. WebApp shows a "queued" confirmation.
+
+**Альтернативные сценарии:**
+- **A1: free quota exhausted (step 5)**  
+  1. Backend returns `free_limit_reached`.  
+  2. WebApp shows a "limit reached" message.  
+- **A2: invalid question ID (step 5)**  
+  1. Backend rejects the request.  
+  2. WebApp shows a failure message.  
+
+**Postconditions:**
+- Guided question is queued for the next turn or rejected if the limit is reached.
+
+**Acceptance criteria:**
+- ✅ UI shows three guided directions with predefined question bubbles.
+- ✅ Guided questions are localized (EN/RU) and aligned with session language.
+- ✅ Each user can use up to 3 free guided questions per week (server-enforced).
+- ✅ UI shows remaining free guided questions and the weekly reset note.
+- ✅ Admin users have unlimited guided questions (no weekly cap).
+- ✅ API rejects non-predefined questions.
+- ✅ Successful selection queues the prompt for the next turn.
 
 ## 3. Non-Functional Requirements
 - Latency: first token within 1-2s for Researcher; Subject within 2-4s after Researcher completion.

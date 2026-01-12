@@ -17,6 +17,7 @@ export class InMemoryStore {
   adminSettings?: {
     id: string;
     token_saver_enabled: boolean;
+    session_stop_enabled: boolean;
     updated_at: string;
     updated_by?: string | null;
   };

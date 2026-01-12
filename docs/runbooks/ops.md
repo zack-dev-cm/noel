@@ -27,6 +27,10 @@ PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
 - Kill switch: distress score >= 0.95.
 - Pause: distress score >= 0.85 or >= 0.60 for 3 consecutive turns.
 
+## Admin Stop Control
+- Toggle "Experiment control" in the Admin panel to pause/resume new turns.
+- When paused, the worker emits `session_paused_by_admin` once per session and posts a system notice.
+
 ## Alert Policy (5xx)
 ```bash
 gcloud alpha monitoring policies create \
@@ -82,12 +86,16 @@ gcloud alpha monitoring policies create \
   `resource.type=cloud_run_revision AND jsonPayload.event="payment_received"`
 - Admin changes:
   `resource.type=cloud_run_revision AND jsonPayload.event="admin_settings_updated"`
+- Admin stop control:
+  `resource.type=cloud_run_revision AND jsonPayload.event="session_paused_by_admin"`
 - Payment catalog mismatch:
   `resource.type=cloud_run_revision AND jsonPayload.event="payment_unknown_type"`
 - Webhook setup:
   `resource.type=cloud_run_revision AND jsonPayload.event="webhook_configured"`
 - Image generation failures:
   `resource.type=cloud_run_revision AND jsonPayload.event="image_generation_failed"`
+- Guided questions queued:
+  `resource.type=cloud_run_revision AND jsonPayload.event="guided_question_queued"`
 
 ## E2E Verification
 - Install Playwright browsers:

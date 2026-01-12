@@ -1,0 +1,41 @@
+# Noetic Mirror - AI-ready knowledge base
+Last updated: 2026-01-11
+Summary: Telegram Mini App that streams a live Researcher (OpenAI) and Subject (Gemini) dialogue, with public sessions, Stars sponsorship, and operator controls.
+
+## Product overview
+- Runs inside Telegram as a Mini App (TMA).
+- Shows live paired turns (Researcher prompt + Subject reply) with telemetry.
+- Supports EN/RU UI and theme toggle.
+- Offers Stars sponsorship tiers and paid interventions.
+
+## Roles
+- Observer: watches public sessions and logs.
+- Sponsor: pays Stars to unlock private sessions and interventions.
+- Operator: manages models, safety controls, and streaming to channel.
+
+## Key features
+- Real-time streaming via WebSocket with reconnection.
+- Safety controls, consent gating, and budget caps.
+- Admin panel for model configuration and pause/stop.
+- Public channel mirroring to https://t.me/noel_mirror when enabled.
+
+## Navigation
+- Tabs: Live, Logs, Stars, About (Admin visible to operators).
+- About includes Ethics and Community guidance.
+
+## Safety and privacy
+- Telegram initData signature validation.
+- Consent required before access.
+- User identifiers are redacted or hashed in logs.
+- Secrets stored in env/secret manager; no client-side secrets.
+
+## Technical stack
+- Frontend: React + Vite.
+- Backend: Node.js/Express.
+- Realtime: WebSocket.
+- Storage: Postgres + Redis.
+
+## Official links
+- WebApp: https://noetic-mirror-web-zlvmfsrm6a-ue.a.run.app/
+- Telegram Mini App deep link: https://t.me/noetic_mirror_bot/app
+- Public channel: https://t.me/noel_mirror

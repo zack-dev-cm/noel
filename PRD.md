@@ -21,9 +21,13 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Ensure log text, labels, and metrics remain readable in Telegram WebView on dark backgrounds.
 - Mirror every Researcher/Subject reply to the public channel when enabled (public session by default).
 - Provide admin controls for model selection, system prompt review, stop/pause, and usage analytics.
+- Allow users to steer the next turn with three free guided question directions (self-awareness, embodiment, consciousness) via predefined prompt bubbles.
+- Reset free guided questions weekly for regular users, while operators are unlimited, and show remaining free guides in the UI.
+- Keep logs readable: newest-first ordering, clear Researcher/Subject labeling, current turn visibility, and clear/restore history controls.
 - Ensure Researcher/Subject replies are fully visible in the UI without truncation or clipping.
 - Keep model replies meaningful but mid-length (not too short, not full-page, target 2–6 sentences for Subject).
 - Run as a single Cloud Run service (UI + API + worker) with max instances set to 1.
+- Provide SEO/GEO discovery files (robots.txt, sitemap.xml, llms.txt, llms-full.txt, agent-context.md) for search engines and AI agents.
 
 ## Non-Goals
 - Not a general chatbot for arbitrary queries.
@@ -50,6 +54,11 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - As an operator, I can review the system prompts used by both models.
 - As an operator, I can stop or pause the model loop from the admin panel.
 - As an operator, I can review user stats and time-spent metrics for the TMA.
+- As a user, I can choose a free guided question (self-awareness, embodiment, consciousness) to steer the next turn without paying Stars.
+- As a user, I can see how many free guided questions remain for the week.
+- As an operator, I can use guided questions without weekly limits.
+- As a user, I can see the newest turns first (including the current live turn) and clear/restore the history view.
+- As an operator, I can stop the experiment loop from the Admin panel.
 
 ## Functional Requirements
 ### Telegram Bot
@@ -74,8 +83,13 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Admin quick-access control (button) to open the Admin view in the TMA.
 - Stream cards show short model tags for Researcher and Subject (label remains “Subject”).
 - Logs allow tap-to-expand cards for full transcripts with gentle, easy navigation.
+- Logs show newest turns first, include the current in-progress turn with clear labeling, and allow clearing/restoring history.
+- Logs allow loading the full transcript history on demand.
 - Bottom navigation for Live, Logs, Stars, About (and Admin for operators).
 - Settings panel with language (EN/RU) and theme (light/dark) toggles.
+- Free guided questions panel with three directions (self-awareness, embodiment, consciousness) using predefined question bubbles.
+- Guided questions are free for up to 3 uses per user and enqueue into the next turn.
+- Guided questions reset weekly for non-admin users and show a remaining count; admins are unlimited.
 - Warm paper-textured background and custom font pairing for an editorial, tactile feel.
 - Advanced motion system (ambient glows, surface sheens, active tab pulses) with reduced-motion fallbacks.
 - Layered shadows and light falloff on cards, tabs, and chips to add depth.
@@ -83,6 +97,12 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - All visible buttons have working actions or a clear “not available” state (no dead UI).
 - About screen actions open configured resources or provide immediate feedback.
 - About Ethics/Community dialogs include detailed guidance and the main channel link (https://t.me/noel_mirror).
+
+### SEO + GEO Discovery
+- Serve `robots.txt` with a sitemap link and explicit allowance for AI crawlers.
+- Serve `sitemap.xml` listing the canonical WebApp URL and AI-ready resources.
+- Provide `llms.txt`, `llms-full.txt`, and `agent-context.md` at the web root with a stable product summary and key links.
+- Keep discovery files updated when the canonical base URL or core capabilities change.
 
 ### Research Loop
 - Researcher (OpenAI) uses a Socratic protocol to probe the Subject with short, focused prompts.
@@ -191,6 +211,8 @@ Minimum requirements:
 - Preferences: ui_locale, ui_theme.
 - Session language metadata: session_language, locale_version.
 - Admin settings: model overrides, stop/pause control, prompt overrides (if enabled).
+- Admin settings: stop control for the experiment loop.
+- Guided question entitlements: free_guided_remaining per user (3 initial uses).
 - TMA usage tracking: user_id, session start/end, duration, and last_active_at.
 
 ## Retention and Redaction

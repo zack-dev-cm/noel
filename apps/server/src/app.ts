@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import authRouter from './routes/auth.js';
 import adminRouter from './routes/admin.js';
+import guidedQuestionsRouter from './routes/guidedQuestions.js';
 import interventionsRouter from './routes/interventions.js';
 import paymentsRouter from './routes/payments.js';
 import sessionSettingsRouter from './routes/sessionSettings.js';
@@ -43,6 +44,7 @@ export function createApp() {
 
   app.use(authRouter);
   app.use(adminRouter);
+  app.use(guidedQuestionsRouter);
   app.use(interventionsRouter);
   app.use(paymentsRouter);
   app.use(userPreferencesRouter);

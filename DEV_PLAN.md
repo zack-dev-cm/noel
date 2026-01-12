@@ -405,6 +405,92 @@ Acceptance:
 - Lighting and shadow layers add depth on cards/tabs without reducing legibility.
 - Typography reads comfortably on small screens and in dark mode.
 
+### M19: SEO + GEO Discovery Files
+Deliverables:
+- `robots.txt`, `sitemap.xml`, `llms.txt`, `llms-full.txt`, and `agent-context.md` served at the WebApp root.
+- AI-ready summaries reflect stable product capabilities and key links.
+
+Tasks:
+- Add static discovery files to `apps/web/public`.
+- Include explicit AI crawler allowances and a sitemap link in `robots.txt`.
+- List canonical URLs plus AI-ready resources in `sitemap.xml`.
+- Summarize product, roles, and stable links in `llms.txt` and `llms-full.txt`.
+- Add a concise `agent-context.md` with citation-ready facts and constraints.
+
+Tests:
+- Manual: `curl -i` each file from the deployed base URL and verify content types.
+
+Acceptance:
+- Discovery files are reachable at the web root after build/deploy.
+- `robots.txt` references the sitemap and allows AI crawlers.
+- AI-ready files provide stable, citation-ready summaries and links.
+
+### M20: Free Guided Questions (Self-awareness, Embodiment, Consciousness)
+Deliverables:
+- Guided questions panel in the WebApp with predefined question bubbles.
+- API endpoint to enqueue guided questions with a 3-use free limit per user.
+- Updated entitlement type for guided questions and structured logging.
+- Weekly reset for free guided questions (non-admins) and an unlimited admin bypass.
+- UI indicator for remaining weekly guided questions.
+
+Tasks:
+- Add a GuidedQuestions component to the Live dashboard with EN/RU copy.
+- Implement `/api/guided-questions` to validate question IDs, enforce the free quota, and enqueue prompts.
+- Extend shared entitlement types to include `guided_question`.
+- Add `/api/guided-questions/status` to return remaining quota and reset metadata.
+- Enforce weekly resets via entitlement expiration and admin bypass.
+- Render remaining guided-question count in the UI.
+- Add Playwright coverage for the guided questions panel and basic submission flow.
+- Update runbooks or ops log queries if new events are added.
+
+Tests:
+- Playwright E2E (headed) with visual inspection.
+
+Acceptance:
+- Users can select a predefined guided question and see a queued confirmation.
+- Free guided questions are limited to 3 uses per week (server-enforced).
+- Guided questions are localized and aligned with the active session language.
+- Remaining weekly guided questions are visible in the UI, and admins are unlimited.
+
+### M21: Logs Hygiene + Admin Stop Control
+Deliverables:
+- Logs show only complete pairs, newest first, with a clear-history control.
+- Admin panel includes a stop control that halts new turns.
+- Server-side admin settings persist stop state and worker respects it.
+
+Tasks:
+- Update turn pairing logic to drop incomplete pairs and reverse log ordering.
+- Add clear-history control to the Logs UI and simplify verbose panels.
+- Extend admin settings (schema + API + UI) with `session_stop_enabled`.
+- Update worker to skip new turns when stop is enabled and log the event.
+- Add Playwright coverage for the new log ordering/clearing and admin stop toggle.
+
+Tests:
+- Playwright E2E (headed) with visual inspection.
+
+Acceptance:
+- Logs are concise and ordered newest-first with a working clear control.
+- Admin stop halts new turns until re-enabled.
+
+### M22: Logs Readability + Latest Turn Visibility
+Deliverables:
+- Logs show newest activity first and include the current in-progress turn with clear labeling.
+- Users can clear history without losing the current turn and restore the full transcript on demand.
+- Turn cards make Researcher/Subject roles visually distinct for quick scanning.
+
+Tasks:
+- Update turn ordering to use last activity sequence and include the latest incomplete turn.
+- Add live/latest badges and a show-all control for the log view.
+- Adjust log card styling and labels for clearer role attribution.
+
+Tests:
+- Playwright E2E (headed) with visual inspection.
+
+Acceptance:
+- Latest turn is always visible at the top, even if awaiting a Subject reply.
+- Logs remain newest-first with full-history access via load/restore.
+- Role labeling is clear at a glance.
+
 ## Tooling and Stack
 - Frontend: React 19 + Tailwind CSS (TMA).
 - Backend: Node.js/Express or Go.

@@ -63,7 +63,7 @@ export interface PaymentRecord {
 export interface EntitlementRecord {
   id: string;
   user_id: string;
-  type: 'private_session' | 'intervention';
+  type: 'private_session' | 'intervention' | 'guided_question';
   remaining: number;
   expires_at?: string | null;
   created_at: string;
@@ -72,6 +72,7 @@ export interface EntitlementRecord {
 export interface AdminSettingsRecord {
   id: string;
   token_saver_enabled: boolean;
+  session_stop_enabled: boolean;
   updated_at: string;
   updated_by?: string | null;
 }
@@ -115,6 +116,7 @@ export interface AdminSettingsRepository {
   getSettings(): Promise<AdminSettingsRecord>;
   updateSettings(input: {
     token_saver_enabled: boolean;
+    session_stop_enabled: boolean;
     updated_by?: string | null;
   }): Promise<AdminSettingsRecord>;
 }

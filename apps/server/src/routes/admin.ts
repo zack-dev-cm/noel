@@ -85,21 +85,29 @@ router.post('/api/admin/settings', async (req, res) => {
     return res.status(403).json({ ok: false, error: 'admin_required' });
   }
 
-  const { tokenSaverEnabled } = req.body as { tokenSaverEnabled?: boolean };
-  if (typeof tokenSaverEnabled !== 'boolean') {
+  const { tokenSaverEnabled, sessionStopEnabled } = req.body as {
+    tokenSaverEnabled?: boolean;
+    sessionStopEnabled?: boolean;
+  };
+  if (typeof tokenSaverEnabled !== 'boolean' && typeof sessionStopEnabled !== 'boolean') {
     return res.status(400).json({ ok: false, error: 'invalid_payload' });
   }
 
   const storage = req.app.locals.storage as StorageRepositories;
+  const current = await storage.admin.getSettings();
   const settings = await storage.admin.updateSettings({
-    token_saver_enabled: tokenSaverEnabled,
+    token_saver_enabled:
+      typeof tokenSaverEnabled === 'boolean' ? tokenSaverEnabled : current.token_saver_enabled,
+    session_stop_enabled:
+      typeof sessionStopEnabled === 'boolean' ? sessionStopEnabled : current.session_stop_enabled,
     updated_by: auth.telegramId
   });
   const modelVersions = getModelVersions();
 
   logEvent('admin_settings_updated', {
     user_id: hashIdentifier(auth.telegramId),
-    token_saver_enabled: settings.token_saver_enabled
+    token_saver_enabled: settings.token_saver_enabled,
+    session_stop_enabled: settings.session_stop_enabled
   });
   return res.json({ ok: true, settings, model_versions: modelVersions });
 });

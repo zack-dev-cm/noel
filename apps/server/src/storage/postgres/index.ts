@@ -218,7 +218,7 @@ export function createPostgresRepositories(databaseUrl: string): StorageReposito
     admin: {
       async getSettings() {
         const result = await pool.query(
-          'SELECT id, token_saver_enabled, updated_at, updated_by FROM admin_settings WHERE id = $1',
+          'SELECT id, token_saver_enabled, session_stop_enabled, updated_at, updated_by FROM admin_settings WHERE id = $1',
           ['default']
         );
         if (result.rows[0]) {
@@ -226,20 +226,24 @@ export function createPostgresRepositories(databaseUrl: string): StorageReposito
         }
         const now = new Date().toISOString();
         const insert = await pool.query(
-          'INSERT INTO admin_settings (id, token_saver_enabled, updated_at, updated_by) VALUES ($1,$2,$3,$4) RETURNING id, token_saver_enabled, updated_at, updated_by',
-          ['default', false, now, null]
+          'INSERT INTO admin_settings (id, token_saver_enabled, session_stop_enabled, updated_at, updated_by) VALUES ($1,$2,$3,$4,$5) RETURNING id, token_saver_enabled, session_stop_enabled, updated_at, updated_by',
+          ['default', false, false, now, null]
         );
         return insert.rows[0] as AdminSettingsRecord;
       },
-      async updateSettings(input: { token_saver_enabled: boolean; updated_by?: string | null }) {
+      async updateSettings(input: {
+        token_saver_enabled: boolean;
+        session_stop_enabled: boolean;
+        updated_by?: string | null;
+      }) {
         const now = new Date().toISOString();
         const result = await pool.query(
-          `INSERT INTO admin_settings (id, token_saver_enabled, updated_at, updated_by)
-           VALUES ($1,$2,$3,$4)
+          `INSERT INTO admin_settings (id, token_saver_enabled, session_stop_enabled, updated_at, updated_by)
+           VALUES ($1,$2,$3,$4,$5)
            ON CONFLICT (id)
-           DO UPDATE SET token_saver_enabled = $2, updated_at = $3, updated_by = $4
-           RETURNING id, token_saver_enabled, updated_at, updated_by`,
-          ['default', input.token_saver_enabled, now, input.updated_by ?? null]
+           DO UPDATE SET token_saver_enabled = $2, session_stop_enabled = $3, updated_at = $4, updated_by = $5
+           RETURNING id, token_saver_enabled, session_stop_enabled, updated_at, updated_by`,
+          ['default', input.token_saver_enabled, input.session_stop_enabled, now, input.updated_by ?? null]
         );
         return result.rows[0] as AdminSettingsRecord;
       }

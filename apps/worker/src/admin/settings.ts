@@ -1,5 +1,6 @@
 export interface AdminSettings {
   token_saver_enabled: boolean;
+  session_stop_enabled?: boolean;
   updated_at?: string;
 }
 

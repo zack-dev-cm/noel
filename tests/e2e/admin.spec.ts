@@ -26,7 +26,11 @@ test('shows model versions in admin panel', async ({ page }) => {
       contentType: 'application/json',
       body: JSON.stringify({
         ok: true,
-        settings: { token_saver_enabled: false, updated_at: '2025-01-01T00:00:00Z' },
+        settings: {
+          token_saver_enabled: false,
+          session_stop_enabled: false,
+          updated_at: '2025-01-01T00:00:00Z'
+        },
         model_versions: {
           researcher: 'gpt-5.2-2025-12-11',
           subject: 'gemini-3-pro-preview',

@@ -9,9 +9,12 @@
 - Which model IDs should be available for admin selection (fixed list vs free text)?
 - Should system prompts be read-only or editable from the admin panel?
 - What user stats are required (daily active, total users, avg time, per-user drilldowns)?
-- Should the stop control pause only new turns or terminate active runs immediately?
-- Where should the extra admin button appear (header, dashboard card, or bottom nav)?
+- Stop control currently pauses new turns only; do you also want in-flight turn termination?
 - Should the 40-request budget persist across worker restarts (Redis/DB), or is in-memory per worker instance acceptable?
 - Confirm `OPENAI_COST_PER_1K_TOKENS` for `gpt-5.2-2025-12-11` (currently using 0.03) to enforce the $0.10 cap accurately.
-- Can you provide a valid `PLAYWRIGHT_INIT_DATA` (or confirm I should generate it using `TELEGRAM_BOT_TOKEN`) for prod E2E?
 - Can I delete Playwright artifacts in `test-results/` to free disk space (only ~58MiB left)?
+- Confirm the canonical public base URL for robots/sitemap/llms (currently set to the Cloud Run service URL from docs/runbooks/deploy.md).
+- For the admin-only "Start research" button: should it (a) simply resume when `session_stop_enabled` is on, (b) trigger a one-off run immediately, or (c) reset session/budget state and start a fresh run?
+- Should "Start research" apply only to the public session or allow selecting a session ID?
+- What should admin UI "logging" display: admin actions only, recent worker/stream events, or backend/system logs? Should this be persisted or just client-side since load?
+- What does "progress" mean for admin UI: current loop phase (researcher/subject/publish), last/next tick timestamps, or a visual progress bar? Should it update in real time?
