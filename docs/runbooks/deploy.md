@@ -1,14 +1,14 @@
 # Runbook: Deploy
 
 ## Current GCP Target
-- Project: `energy-meters`
-- Region: `us-east1`
-- Cloud Run service: `noetic-mirror-web` (UI + API + research loop)
-- Web URL: `https://noetic-mirror-web-zlvmfsrm6a-ue.a.run.app`
-- Telegram WebApp: `https://t.me/noetic_mirror_bot/app`
-- Cloud SQL: `energy-meters:us-east1:bvis-postgres` (db: `noetic_mirror`, user: `noetic_user`)
-- Redis: `noetic-redis` (private)
-- VPC connector: `medaudit-connector`
+- Project: `<PROJECT_ID>`
+- Region: `<REGION>` (example: `us-east1`)
+- Cloud Run service: `<SERVICE_NAME>` (example: `noetic-mirror-web`, UI + API + research loop)
+- Web URL: `https://<SERVICE_ID>-<REGION>.a.run.app`
+- Telegram WebApp: `https://t.me/<BOT_USERNAME>/app`
+- Cloud SQL: `<PROJECT_ID>:<REGION>:<INSTANCE_NAME>` (db: `<DB_NAME>`, user: `<DB_USER>`)
+- Redis: `<REDIS_INSTANCE_NAME>` (private)
+- VPC connector: `<VPC_CONNECTOR_NAME>`
 
 ## Prerequisites
 - GCP project ID and region (or your chosen cloud provider equivalents).
@@ -28,7 +28,7 @@
 - ENV (default: prod)
 - INIT_DATA_MAX_AGE_SECONDS (default: 86400)
 - WEB_APP_URL (Mini App base URL for deep links)
-- WEB_APP_TMA_URL (t.me deeplink for channel buttons, required for `/post_tma`, e.g. `https://t.me/noetic_mirror_bot/app`)
+- WEB_APP_TMA_URL (t.me deeplink for channel buttons, required for `/post_tma`, e.g. `https://t.me/<BOT_USERNAME>/app`)
 - LOG_LEVEL (info|debug)
 - SERVICE_ROLE (web|all; default: all)
 - WORKER_HTTP_ENABLED (default: false when running worker inside web)
@@ -59,7 +59,7 @@
 - RESEARCHER_MAX_OUTPUT_CHARS_SAVER (default: 520)
 - SUBJECT_MAX_OUTPUT_CHARS_SAVER (default: 700)
 - STREAM_PUBLISH_TOKEN (worker -> web internal auth)
-- PUBLIC_CHANNEL_ID (default: @noel_mirror)
+- PUBLIC_CHANNEL_ID (default: @your_channel)
 - ENABLE_PUBLIC_CHANNEL_POSTS (true|false)
 - ENABLE_PUBLIC_CHANNEL_STREAM (optional; defaults to ENABLE_PUBLIC_CHANNEL_POSTS)
 - PUBLIC_CHANNEL_STREAM_PRIVATE (true|false; default: false)
@@ -82,8 +82,8 @@ PROJECT_ID=<PROJECT_ID> REGION=<REGION> WEB_APP_URL=<WEB_APP_URL> \
 # Build container image
 PROJECT_ID=<PROJECT_ID>
 REGION=<REGION>
-SERVICE=noetic-mirror-web
-IMAGE=gcr.io/$PROJECT_ID/noetic-mirror:latest
+SERVICE=<SERVICE_NAME>
+IMAGE=gcr.io/$PROJECT_ID/<IMAGE_NAME>:latest
 
 PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
   gcloud builds submit --project "$PROJECT_ID" --tag "$IMAGE"

@@ -3,7 +3,7 @@
 ## Log Tailing
 ```bash
 PROJECT_ID=<PROJECT_ID>
-SERVICE=noetic-mirror-web
+SERVICE=<SERVICE_NAME>
 
 # Cloud Run logs
 PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH \
@@ -101,7 +101,7 @@ gcloud alpha monitoring policies create \
 - Install Playwright browsers:
   - `npx playwright install --with-deps`
 - Generate initData for prod runs (uses bot token):
-  - `PLAYWRIGHT_INIT_DATA=$(TELEGRAM_BOT_TOKEN=$(gcloud secrets versions access latest --secret=noetic-telegram-bot-token --project energy-meters) node scripts/generate_init_data.js)`
+  - `PLAYWRIGHT_INIT_DATA=$(TELEGRAM_BOT_TOKEN=$(gcloud secrets versions access latest --secret=<TELEGRAM_BOT_TOKEN_SECRET> --project <PROJECT_ID>) node scripts/generate_init_data.js)`
 - Headed E2E run:
   - Local: `PLAYWRIGHT_BASE_URL=http://localhost:8787 PLAYWRIGHT_API_BASE_URL=http://localhost:8787 npx playwright test --headed`
   - Prod: `PLAYWRIGHT_INIT_DATA=$PLAYWRIGHT_INIT_DATA PLAYWRIGHT_BASE_URL=https://<SERVICE_URL> PLAYWRIGHT_API_BASE_URL=https://<SERVICE_URL> npx playwright test --headed`

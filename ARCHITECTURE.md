@@ -1,7 +1,7 @@
 # Architecture - Project Noetic Mirror
 
 ## 1. Task Description
-This document implements the architecture for `TZ.md` (Project Noetic Mirror). The system is a Telegram Mini App (TMA) that streams a live Researcher (OpenAI) ↔ Subject (Gemini) loop, with Stars payments, safety controls, session persistence, and GCP deployment, plus a mobile-native UI with bottom navigation, explicit turn pairing, EN/RU + theme toggles, mid-length Subject replies (2–6 sentences), full reply visibility, short model tags, telemetry completeness, and enhanced logging to debug empty Subject replies.
+This document implements the architecture for `TZ.md` (Project Noetic Mirror). The system is a Telegram Mini App (TMA) that streams a live Researcher (OpenAI) ↔ Subject (Gemini) loop, with Stars payments, safety controls, session persistence, and GCP deployment, plus a mobile-native UI with bottom navigation, explicit turn pairing, EN/RU + theme toggles, mid-length Subject replies (2–6 sentences), full reply visibility, short model tags, telemetry completeness, a public landing page for non-Telegram visitors, and enhanced logging to debug empty Subject replies.
 
 ## 2. Functional Architecture
 
@@ -30,6 +30,10 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
     - Inputs: localized copy
     - Outputs: modal body content
     - UC: UC-12
+  - Render a public landing page when Telegram initData is missing and the WebApp is not embedded in Telegram.
+    - Inputs: locale/theme state, static landing copy
+    - Outputs: landing layout with CTAs to open the TMA and public channel
+    - UC: UC-15
   - Apply paper-material design system (custom font pairing, textured backgrounds, warm palette).
     - Inputs: global CSS tokens
     - Outputs: tactile UI styling
@@ -62,10 +66,22 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
     - Inputs: transcript payloads, UI state
     - Outputs: ordered paired turns with clear-history control
     - UC: UC-07
+  - Surface user insertions (guided questions/interventions), hide failed Subject fallback responses, and add search + highlight navigation for logs.
+    - Inputs: transcript payloads, user search input, insertion events
+    - Outputs: insertion cards, filtered log view, highlight jump links
+    - UC: UC-07
+  - Auto-focus the live turn and expose a “query in progress” indicator with jump-to-live navigation.
+    - Inputs: stream events, UI state
+    - Outputs: live status banner + scroll focus
+    - UC: UC-07
   - Display safety/consent and error states.
     - Inputs: consent status, safety events
     - Outputs: UI banners/lockouts
     - UC: UC-01, UC-06
+  - Render admin-only controls to start/resume the public loop and display real-time loop phase + activity log.
+    - Inputs: admin settings, live stream events
+    - Outputs: start control, progress state, activity feed
+    - UC: UC-06
 - Dependencies: Stream Relay, Auth/Consent, Payments & Entitlements.
 
 **Component: SEO + GEO Discovery Files**
@@ -84,6 +100,27 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
     - Outputs: agent-readable context
     - UC: UC-13
 - Dependencies: WebApp static hosting, Release process.
+
+**Component: Repository Documentation & Governance**
+- Purpose: Provide public open-source onboarding, contribution, and security guidance with sanitized deployment notes.
+- Functions:
+  - Publish a README with project summary, features, architecture links, and quickstart.
+    - Inputs: project docs, UI screenshots
+    - Outputs: README.md content
+    - UC: UC-16
+  - Provide contributor guidance (CONTRIBUTING, CODE_OF_CONDUCT) and security policy.
+    - Inputs: repo policies
+    - Outputs: contribution and security docs
+    - UC: UC-16
+  - Provide an `.env.example` with required variables and safe placeholders.
+    - Inputs: env var list
+    - Outputs: sample env file
+    - UC: UC-16
+  - Sanitize runbooks and public deploy guidance to avoid internal identifiers.
+    - Inputs: runbooks
+    - Outputs: public-ready runbooks
+    - UC: UC-17
+- Dependencies: Documentation pipeline, CI/CD references.
 
 **Component: Auth & Consent**
 - Purpose: Validate Telegram initData and enforce consent gating.
@@ -151,6 +188,10 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
     - Inputs: loop events
     - Outputs: WS broadcast, Redis stream
     - UC: UC-02
+  - Seed per-session sequence counters from persisted transcripts on first publish after restart to avoid duplicate seq inserts.
+    - Inputs: transcript latest seq
+    - Outputs: monotonic seq assignment
+    - UC: UC-02
   - Preserve telemetry and model metadata on publish (no stripping when content exists).
     - Inputs: stream events with telemetry/model tags
     - Outputs: fully populated WS payloads
@@ -158,6 +199,10 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
   - Replay events on reconnect using last_seq.
     - Inputs: last_seq
     - Outputs: missing events, resume stream
+    - UC: UC-02, UC-07
+  - Publish insertion lifecycle events (queued → accepted → researcher thinking → subject thinking → answered) with prompt/user metadata.
+    - Inputs: guided question/intervention queue items
+    - Outputs: system events in WS, transcript, and channel mirror
     - UC: UC-02, UC-07
 - Dependencies: Redis (pubsub/stream), Postgres (transcripts).
 
@@ -215,6 +260,10 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
   - Stop/start the experiment loop (halt new turns).
     - Inputs: admin auth, stop toggle
     - Outputs: updated stop state, worker halt
+    - UC: UC-06
+  - Provide loop phase + activity visibility in the admin panel (derived from live stream events).
+    - Inputs: stream events
+    - Outputs: phase indicator, activity log
     - UC: UC-06
   - Update token saver mode.
     - Inputs: admin auth, toggle

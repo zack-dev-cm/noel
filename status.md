@@ -97,10 +97,30 @@
   - Planning: complete
   - Development: complete
 - Admin start control + admin UI logging/progress:
-  - Analysis (PRD/TZ): in progress
-  - Architecture: pending
-  - Planning: pending
-  - Development: pending
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
+- Noel landing page (public web):
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
+- User insertions + progress tracking + stream gating:
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: in progress (override stop for insertions; prod E2E blocked on initData)
+- Transcript sequence recovery + persistence resilience:
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
+- Open-source release readiness:
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: complete
 
 ## Current Tasks
 - Review/refactor/debug/commit/push request: complete
@@ -171,8 +191,20 @@
 - Update PRD/TZ/Architecture/Plan for logs readability + latest visibility: complete
 - Implement log readability + current/latest visibility fixes: complete
 - Run Playwright E2E + deploy/debug loop for logs readability: complete
-- Update PRD/TZ/Architecture/Plan for admin start control + admin UI logging/progress: in progress
-- Implement admin start control + admin logging/progress UI: blocked (requirements pending)
+- Update PRD/TZ/Architecture/Plan for admin start control + admin UI logging/progress: complete
+- Implement admin start control + admin logging/progress UI: complete
+- Run Playwright E2E + deploy/debug loop for admin start/logging: complete
+- Update PRD/TZ/Architecture/Plan for Noel landing page: complete
+- Implement landing page UI + non-Telegram gating: complete
+- Update PRD/TZ/Architecture/Plan for transcript sequence recovery: complete
+- Implement transcript sequence recovery + idempotent persistence: complete
+- Run Playwright E2E + deploy/debug loop for transcript sequence recovery: complete
+- Update PRD/TZ/Architecture/Plan for user insertions + progress tracking: complete
+- Implement user insertions + progress tracking + stream gating: in progress (override stop for insertions; awaiting prod E2E)
+- Run prod E2E with valid initData: blocked
+- Update PRD/TZ/Architecture/Plan for open-source release: complete
+- Create README + screenshots + governance docs + env example: complete
+- Sanitize runbooks for public release: complete
 
 ## Notes
 - Worker loop runs inside `noetic-mirror-web` (`SERVICE_ROLE=all`, `WORKER_HTTP_ENABLED=false`).
@@ -180,5 +212,9 @@
 - Discovery files verified via curl on `https://noetic-mirror-web-zlvmfsrm6a-ue.a.run.app`.
 - Local Playwright E2E now passes after pre-creating `.playwright-artifacts-*` directories.
 - Prior prod E2E failures were caused by missing valid initData and local disk space (ENOSPC).
+- Deployed `noetic-mirror-web-00042-rmm`; prod Playwright E2E passed using generated initData.
+- Deployed `noetic-mirror-web-00043-8rw`; prod Playwright E2E passed and no duplicate transcript errors found in logs.
+- Deployed `noetic-mirror-web-00044-m4g`; prod Playwright E2E failed because initData was missing (auth overlay blocked tests).
+- Deployed `noetic-mirror-web-00045-dxt` with insertion override (turns allowed when stop enabled + intervention queued).
 - Open questions tracked in open_questions.md.
 - Local disk cleanup: cleared user caches/logs to free ~5.5Gi; `df -h /` now shows ~4.8Gi available.

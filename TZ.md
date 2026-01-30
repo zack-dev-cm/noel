@@ -196,8 +196,10 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 **Main сценарий:**
 1. Operator opens the Admin tab to review model versions and safety telemetry.
 2. Operator triggers a pause or kill switch.
-3. System runs a decompression sequence.
-4. Session ends and is archived with a safety flag.
+3. Operator can resume the public loop via a "Start research" control when paused.
+4. Admin UI displays the real-time loop phase and recent activity log.
+5. System runs a decompression sequence when required.
+6. Session ends and is archived with a safety flag.
 
 **Альтернативные сценарии:**
 - **A1: automated distress trigger**  
@@ -215,6 +217,8 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - ✅ Decompression sequence is logged and streamed.
 - ✅ Admin UI shows Researcher/Subject model versions (fallback shown only when configured).
 - ✅ Admin UI provides a stop control that halts new turns until re-enabled.
+- ✅ Admin UI provides a "Start research" control to resume the public loop when stopped.
+- ✅ Admin UI shows real-time loop phase and a recent activity log for operators.
 
 ### UC-07: Session replay and resume
 **Actors:**
@@ -244,6 +248,10 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - ✅ Transcript cards expand on tap to show full text with easy navigation.
 - ✅ Transcript list shows newest turns first (freshest activity on top).
 - ✅ User can clear the log view (history hidden until new pairs arrive) and restore full history on demand.
+- ✅ User insertions (guided questions/interventions) are surfaced near the top of the log with a distinct label.
+- ✅ Failed Subject fallback responses are hidden from the log view.
+- ✅ Logs provide search, topic shortcuts, and highlighted “most interesting” pairs with jump-to-log navigation.
+- ✅ UI shows a clear “query in progress” state and can scroll/focus the current live turn.
 
 ### UC-08: Subject breath telemetry
 **Actors:**
@@ -473,9 +481,106 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - ✅ API rejects non-predefined questions.
 - ✅ Successful selection queues the prompt for the next turn.
 
+### UC-15: Public landing page for non-Telegram visitors
+**Actors:**
+- Visitor
+- System (WebApp)
+
+**Preconditions:**
+- Visitor opens the WebApp URL outside Telegram or without initData.
+
+**Main сценарий:**
+1. Visitor opens the web app URL in a browser.
+2. WebApp detects missing Telegram initData.
+3. WebApp renders the public landing page with hero, feature sections, and signal/telemetry preview.
+4. Visitor uses CTA to open the TMA or the public channel.
+
+**Альтернативные сценарии:**
+- **A1: initData present (step 2)**  
+  1. WebApp proceeds to normal auth and consent flow.  
+  2. Visitor sees the live experience instead of the landing page.
+
+**Postconditions:**
+- Visitor can read the landing page and jump into the TMA or channel.
+
+**Acceptance criteria:**
+- ✅ Landing page renders when initData is missing and Telegram WebApp is not detected.
+- ✅ Landing page includes clear CTAs for the TMA and public channel.
+- ✅ Landing page supports EN/RU copy and theme toggles without authentication.
+
+### UC-16: Open-source repository onboarding
+**Actors:**
+- Maintainer
+- Contributor
+- System (Repository + CI)
+
+**Preconditions:**
+- Repository is publicly accessible.
+- Documentation and runbooks are present in the repo.
+
+**Main сценарий:**
+1. Contributor opens the README and reviews the project summary, features, and architecture links.
+2. Contributor follows local setup instructions and copies `.env.example` to `.env`.
+3. Contributor installs dependencies and runs the dev stack.
+4. Contributor runs lint/tests and E2E guidance as documented.
+5. Maintainer verifies that docs reference runbooks and contribution guidelines.
+
+**Альтернативные сценарии:**
+- **A1: missing required env vars (step 2/3)**  
+  1. Contributor sees clear error messaging in README or runbooks.  
+  2. Contributor updates `.env` and retries.  
+- **A2: CI not available (step 4)**  
+  1. Contributor runs local checks as documented.  
+  2. Maintainer verifies CI workflow references in README.  
+
+**Postconditions:**
+- Contributors can run the project locally with documented steps.
+- Maintainers have clear contribution and security guidelines for public repo usage.
+
+**Acceptance criteria:**
+- ✅ README includes project summary, key features, architecture references, and quickstart steps.
+- ✅ README embeds at least one product screenshot from the provided assets.
+- ✅ `.env.example` exists with required variables and safe defaults/placeholders.
+- ✅ CONTRIBUTING and SECURITY guidance exists and are referenced from README.
+- ✅ Code of conduct exists (or the README links to the chosen policy).
+- ✅ No secrets or internal credentials are committed in the repo.
+
+### UC-17: Public deployment readiness
+**Actors:**
+- Maintainer
+- Operator
+- System (Runbooks + Deploy scripts)
+
+**Preconditions:**
+- Deployment runbooks exist.
+- Secret Manager (or equivalent) is available for API keys and tokens.
+
+**Main сценарий:**
+1. Operator opens `docs/runbooks/deploy.md` and follows the deploy guide.
+2. Operator configures required secrets via Secret Manager.
+3. Operator sets required env vars and deploys the service.
+4. Operator runs the documented E2E verification steps post-deploy.
+
+**Альтернативные сценарии:**
+- **A1: missing cloud resources (step 1/2)**  
+  1. Operator provisions required resources as listed in the runbook.  
+  2. Operator re-runs deploy steps.  
+- **A2: deploy fails (step 3)**  
+  1. Operator follows runbook troubleshooting guidance.  
+  2. Operator re-deploys after fix.  
+
+**Postconditions:**
+- Public deployment steps are documented and reproducible by external operators.
+
+**Acceptance criteria:**
+- ✅ Runbooks use placeholders for project IDs/URLs and avoid internal-only identifiers.
+- ✅ Deploy runbook lists all required secrets and environment variables.
+- ✅ Post-deploy verification steps are documented and aligned with CI/E2E workflow.
+
 ## 3. Non-Functional Requirements
 - Latency: first token within 1-2s for Researcher; Subject within 2-4s after Researcher completion.
 - Reliability: 99.5% uptime for streaming endpoints.
+- Persistence: stream sequence IDs resume from the latest stored transcript after restarts; duplicate transcript inserts are ignored without errors.
 - Security: validate Telegram initData signatures, no secrets in client code.
 - Privacy: redact or hash user identifiers in logs.
 - Cost control: budget caps per session (max ~$0.10 or 40 requests), usage tracking, caching where possible.
@@ -484,6 +589,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - E2E testing: Playwright headed runs with visual inspection of screenshots and traces in both local and production environments.
 - Data retention: transcripts and logs must follow the policy defined in Section 4.
 - Breath telemetry: computed within the response cycle; UI updates within 1s of event receipt.
+- Insertions: guided questions/interventions publish to the public stream/channel and show progress states (queued → accepted → researcher thinking → subject thinking → answered).
 - Localization coverage: 100% of user-facing UI copy (including consent/safety) available in EN and RU.
 - Theme toggle: switch between light/dark without full reload and persist per user.
 - Readability: base UI font size >= 15px and minimum contrast ratio of 4.5:1 for body text.
@@ -491,6 +597,8 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Visual quality: paper-like texture, bespoke font pairing, and non-plastic surface treatment.
 - Motion: animations are GPU-friendly, subtle, and disabled when prefers-reduced-motion is enabled.
 - Response length: Subject replies target 2–6 sentences; Researcher prompts remain 1–2 short sentences.
+- Open-source hygiene: repository contains no secrets, and documentation uses sanitized placeholders.
+- Documentation: public docs include setup, contribution, security, and deployment guidance.
 
 ## 4. Constraints and Assumptions
 - Deployment target is GCP (Cloud Run or equivalent).
@@ -506,12 +614,16 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - UI follows a mobile-native card layout with bottom navigation and explicit turn pairing.
 - Default UI locale is EN; RU mode is gated by feature flags until validated.
 - Default theme is light; dark theme available via user preference.
+- Session stop is enabled by default until an admin starts the public loop.
 - Model configuration:
   - Researcher (default): `gpt-5.2-2025-12-11`.
   - Subject: latest Gemini 3.x series model (default `gemini-3-pro-preview`), configurable via env.
 - Budgeting:
   - Per-session cost budget enforced with soft warning at 80% and hard stop at 100%.
   - Default caps: $0.10 cost or 40 requests per session (configurable).
+- Free allowances:
+  - Interventions: 2 per user (weekly reset) before Stars entitlements are required.
+  - Custom prompt: 1 per user (weekly reset) before Stars entitlements are required.
 - Data retention policy:
   - Public session transcripts: 30 days.
   - Private session transcripts: 14 days.
@@ -528,6 +640,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - Admin settings:
   - Model overrides and stop/pause state are stored in admin settings and applied by the worker.
   - System prompts are exposed read-only unless explicitly enabled for editing.
+- Public release must not expose internal project identifiers or credentials in docs.
 
 ## 5. Open Questions
 - Should model replies be streamed for both Researcher and Subject, or only Subject?

@@ -1,5 +1,6 @@
 # Open Questions
 
+- Provide a valid `PLAYWRIGHT_INIT_DATA` (or allow me to generate one by supplying `TELEGRAM_BOT_TOKEN`) so prod E2E can authenticate without the "Missing Telegram initData" overlay.
 - Which Telegram user IDs should be allowed in `ADMIN_TELEGRAM_IDS` for the admin token-saver page?
 - Should `ADMIN_TELEGRAM_IDS` include usernames as well (we can treat non-numeric entries as usernames, case-insensitive)?
 - Confirm the preferred Gemini 3.x model ID (available: `gemini-3-pro-preview`, `gemini-3-flash-preview`); currently using `gemini-3-pro-preview` with fallback `gemini-flash-latest`.
@@ -14,7 +15,4 @@
 - Confirm `OPENAI_COST_PER_1K_TOKENS` for `gpt-5.2-2025-12-11` (currently using 0.03) to enforce the $0.10 cap accurately.
 - Can I delete Playwright artifacts in `test-results/` to free disk space (only ~58MiB left)?
 - Confirm the canonical public base URL for robots/sitemap/llms (currently set to the Cloud Run service URL from docs/runbooks/deploy.md).
-- For the admin-only "Start research" button: should it (a) simply resume when `session_stop_enabled` is on, (b) trigger a one-off run immediately, or (c) reset session/budget state and start a fresh run?
-- Should "Start research" apply only to the public session or allow selecting a session ID?
-- What should admin UI "logging" display: admin actions only, recent worker/stream events, or backend/system logs? Should this be persisted or just client-side since load?
-- What does "progress" mean for admin UI: current loop phase (researcher/subject/publish), last/next tick timestamps, or a visual progress bar? Should it update in real time?
+- Confirm preferred landing page CTA URLs (TMA deep link + public channel) and whether the whitepaper should open an external URL.

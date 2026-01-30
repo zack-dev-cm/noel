@@ -491,6 +491,121 @@ Acceptance:
 - Logs remain newest-first with full-history access via load/restore.
 - Role labeling is clear at a glance.
 
+### M23: Admin Start Control + Progress Logging
+Deliverables:
+- Admin-only "Start research" control for resuming the public loop.
+- Admin panel shows real-time loop phase and a recent activity log.
+
+Tasks:
+- Update AdminPanel UI to expose a Start research action when the loop is stopped.
+- Derive loop phase from live stream events and render a progress indicator in the admin panel.
+- Add a compact activity log in the admin panel (admin actions + stream event summaries).
+- Update admin i18n copy for start/progress/logging.
+- Pass live stream events and locale to the AdminPanel for real-time updates.
+
+Tests:
+- Playwright E2E (headed) with visual inspection.
+
+Acceptance:
+- Admin can resume the public loop via Start research when stopped.
+- Admin sees loop phase updates in real time and a recent activity log in the admin panel.
+
+## M15: Logs navigation + insertions + highlights
+Deliverables:
+- Log timeline surfaces user insertions with clear labels.
+- Failed Subject fallback responses are hidden from logs.
+- Logs include search, topic shortcuts, and highlighted “most interesting” pairs.
+- Logs provide a clear “query in progress” indicator with jump-to-live navigation.
+
+Tasks:
+- Update log event merging/ordering to tolerate seq resets and keep latest items on top.
+- Add search input, topic chips, and highlight cards in the Logs view.
+- Add insertion cards for guided questions/interventions and filter failed Subject fallback replies.
+- Add auto-focus/scroll for the active live turn with a jump-to-live action.
+
+Tests:
+- Playwright E2E (headed) with visual inspection.
+
+Acceptance:
+- Insertions appear near the top of logs with distinct styling.
+- Failed fallback Subject responses are not shown.
+- Search, topic shortcuts, and highlight pairs work and jump to the correct log items.
+- Live turn auto-focus and “query in progress” banner behave reliably.
+
+## M16: Public landing page (non-Telegram)
+Deliverables:
+- Public landing page for visitors outside Telegram.
+- Clear CTAs to open the TMA and public channel.
+- EN/RU copy and theme toggles on the landing page.
+
+Tasks:
+- `tasks/task_26_1.md`: Build landing page layout + copy + styles.
+- `tasks/task_26_2.md`: Gate auth to landing state when initData is missing and disable stream connection.
+
+Tests:
+- Playwright E2E (headed) with visual inspection.
+- Manual check: open WebApp URL without initData and verify landing renders.
+
+Acceptance:
+- Landing page renders outside Telegram without blocking auth errors.
+- CTAs open the TMA and public channel.
+- EN/RU + theme toggles update landing copy and appearance.
+
+## M27: Transcript Sequence Recovery
+Deliverables:
+- Stream sequence counters resume from the latest persisted transcript after restarts.
+- Transcript persistence is idempotent and avoids duplicate sequence errors.
+
+Tasks:
+- `tasks/task_27_1.md`: Seed stream sequence counters from persisted transcripts and handle duplicate inserts safely.
+- `tasks/task_27_2.md`: Playwright + deploy/debug loop for transcript sequence recovery.
+
+Tests:
+- Playwright E2E (headed) with visual inspection.
+
+Acceptance:
+- No `stream_persist_failed` duplicate key errors during publish after restart.
+- Stream seq continues monotonically and transcripts keep appending after restarts.
+
+## M28: Insertions + Progress Tracking + Stream Gating
+Deliverables:
+- Research stream starts paused by default and requires admin start.
+- Guided questions/interventions publish immediately to the stream with prompt metadata.
+- Users see insertion progress (queued → accepted → researcher thinking → subject thinking → answered) and the raw prompt in Live/Logs.
+- 2 free interventions + 1 free custom prompt per user before Stars entitlements are required.
+
+Tasks:
+- `tasks/task_28_1.md`: Server queue metadata, insertion publish events, free entitlement gating, and worker progress events.
+- `tasks/task_28_2.md`: Web UI progress tracker, insertion cards, and updated guided/custom intervention UX.
+- `tasks/task_28_3.md`: Playwright + deploy/debug loop for insertions and stream gating.
+
+Tests:
+- Playwright E2E (headed) with visual inspection.
+
+Acceptance:
+- Insertions show in Live/Logs immediately with TG-labeled prompts.
+- Progress states advance as the worker processes the insertion.
+- Public stream is paused by default until admin start.
+
+### M24: Open-source Release Readiness
+Deliverables:
+- Public README with summary, features, quickstart, and screenshots.
+- CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, and LICENSE files.
+- Sanitized `.env.example` and public-ready runbooks.
+
+Tasks:
+- Create README with project overview, architecture links, and setup steps.
+- Add repository governance docs (contributing, security, code of conduct, license).
+- Add `.env.example` with required variables and placeholders.
+- Sanitize runbooks to remove internal identifiers and private URLs.
+
+Tests:
+- No automated tests required (documentation-only changes).
+
+Acceptance:
+- README includes at least one product screenshot and links to runbooks.
+- Public docs contain no internal project IDs or secrets.
+
 ## Tooling and Stack
 - Frontend: React 19 + Tailwind CSS (TMA).
 - Backend: Node.js/Express or Go.
