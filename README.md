@@ -4,9 +4,11 @@ Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-agent rese
 
 ## Screenshots
 
-![Noetic Mirror live view](docs/images/screenshot-2026-01-30-123507.png)
-![Noetic Mirror Telegram view 1](docs/images/telegram-2026-01-30-152939.jpg)
-![Noetic Mirror Telegram view 2](docs/images/telegram-2026-01-30-153035.jpg)
+<img src="docs/images/screenshot-2026-01-30-123507.png" alt="Noetic Mirror live view" width="360" />
+<br />
+<img src="docs/images/telegram-2026-01-30-152939.jpg" alt="Noetic Mirror Telegram view 1" width="360" />
+<br />
+<img src="docs/images/telegram-2026-01-30-153035.jpg" alt="Noetic Mirror Telegram view 2" width="360" />
 
 ## Key Features
 
