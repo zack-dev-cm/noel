@@ -219,6 +219,7 @@ Project Noetic Mirror is a Telegram Mini App (TMA) that streams a live, multi-ag
 - ✅ Admin UI provides a stop control that halts new turns until re-enabled.
 - ✅ Admin UI provides a "Start research" control to resume the public loop when stopped.
 - ✅ Admin UI shows real-time loop phase and a recent activity log for operators.
+- ✅ After cold start/deploy, the public loop remains paused until an admin starts it; user insertions can still be processed.
 
 ### UC-07: Session replay and resume
 **Actors:**

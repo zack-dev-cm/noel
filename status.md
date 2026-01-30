@@ -121,6 +121,11 @@
   - Architecture: complete
   - Planning: complete
   - Development: complete
+- Cold start loop gating:
+  - Analysis (PRD/TZ): complete
+  - Architecture: complete
+  - Planning: complete
+  - Development: in progress
 
 ## Current Tasks
 - Review/refactor/debug/commit/push request: complete
@@ -205,6 +210,8 @@
 - Update PRD/TZ/Architecture/Plan for open-source release: complete
 - Create README + screenshots + governance docs + env example: complete
 - Sanitize runbooks for public release: complete
+- Update PRD/TZ/Architecture/Plan for cold start gating: complete
+- Implement cold start gating (admin settings + env docs): in progress
 
 ## Notes
 - Worker loop runs inside `noetic-mirror-web` (`SERVICE_ROLE=all`, `WORKER_HTTP_ENABLED=false`).

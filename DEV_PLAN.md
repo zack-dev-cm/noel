@@ -606,6 +606,20 @@ Acceptance:
 - README includes at least one product screenshot and links to runbooks.
 - Public docs contain no internal project IDs or secrets.
 
+### M25: Cold Start Loop Gating
+Deliverables:
+- Public loop does not auto-run after deploy/cold start without admin start.
+- User insertions still trigger a single loop even when paused.
+
+Tasks:
+- Enforce cold-start pause in admin settings retrieval using boot timestamp.
+- Add env flag `REQUIRE_ADMIN_START_ON_BOOT` (default true) with documentation.
+- Update worker loop behavior to respect the effective paused state.
+
+Acceptance:
+- Cold start does not spend budget without admin start.
+- Admin can explicitly start the loop and allow automatic turns.
+
 ## Tooling and Stack
 - Frontend: React 19 + Tailwind CSS (TMA).
 - Backend: Node.js/Express or Go.

@@ -179,6 +179,10 @@ This document implements the architecture for `TZ.md` (Project Noetic Mirror). T
     - Inputs: telemetry + moderation signals
     - Outputs: pause/terminate events
     - UC: UC-06
+  - Enforce cold-start pause: if the last admin setting indicates “running” but predates the current boot, keep the loop paused until an admin explicitly starts it.
+    - Inputs: admin settings (updated_at), service boot time
+    - Outputs: paused state, no automatic turn execution
+    - UC: UC-06
 - Dependencies: Guardrails, Stream Relay, Storage.
 
 **Component: Stream Relay**

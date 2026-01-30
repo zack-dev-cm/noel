@@ -1,6 +1,40 @@
 import type { AdminSettingsRecord, AdminSettingsRepository } from '@noetic/shared';
 import type { InMemoryStore } from './store.js';
 
+const serverBootTime = Date.now();
+
+function resolveBooleanEnv(value: string | undefined, defaultValue: boolean) {
+  if (value === undefined) {
+    return defaultValue;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false;
+  }
+  return defaultValue;
+}
+
+function shouldForceStopOnBoot(settings: AdminSettingsRecord | null): boolean {
+  if (!settings) {
+    return false;
+  }
+  if (settings.session_stop_enabled) {
+    return false;
+  }
+  const requireAdminStart = resolveBooleanEnv(process.env.REQUIRE_ADMIN_START_ON_BOOT, true);
+  if (!requireAdminStart) {
+    return false;
+  }
+  const updatedAt = Date.parse(settings.updated_at);
+  if (!Number.isFinite(updatedAt)) {
+    return true;
+  }
+  return updatedAt < serverBootTime;
+}
+
 export class InMemoryAdminRepository implements AdminSettingsRepository {
   constructor(private store: InMemoryStore) {}
 
@@ -13,6 +47,15 @@ export class InMemoryAdminRepository implements AdminSettingsRepository {
         session_stop_enabled: false,
         updated_at: now,
         updated_by: null
+      };
+      return this.store.adminSettings;
+    }
+    if (shouldForceStopOnBoot(this.store.adminSettings)) {
+      const now = new Date().toISOString();
+      this.store.adminSettings = {
+        ...this.store.adminSettings,
+        session_stop_enabled: true,
+        updated_at: now
       };
     }
     return this.store.adminSettings;

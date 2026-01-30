@@ -10,6 +10,40 @@ import type {
   UserRecord
 } from '@noetic/shared';
 
+const serverBootTime = Date.now();
+
+function resolveBooleanEnv(value: string | undefined, defaultValue: boolean) {
+  if (value === undefined) {
+    return defaultValue;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false;
+  }
+  return defaultValue;
+}
+
+function shouldForceStopOnBoot(settings: AdminSettingsRecord | null): boolean {
+  if (!settings) {
+    return false;
+  }
+  if (settings.session_stop_enabled) {
+    return false;
+  }
+  const requireAdminStart = resolveBooleanEnv(process.env.REQUIRE_ADMIN_START_ON_BOOT, true);
+  if (!requireAdminStart) {
+    return false;
+  }
+  const updatedAt = Date.parse(settings.updated_at);
+  if (!Number.isFinite(updatedAt)) {
+    return true;
+  }
+  return updatedAt < serverBootTime;
+}
+
 export function createPostgresRepositories(databaseUrl: string): StorageRepositories {
   const pool = new Pool({ connectionString: databaseUrl });
 
@@ -222,12 +256,21 @@ export function createPostgresRepositories(databaseUrl: string): StorageReposito
           ['default']
         );
         if (result.rows[0]) {
-          return result.rows[0] as AdminSettingsRecord;
+          const existing = result.rows[0] as AdminSettingsRecord;
+          if (shouldForceStopOnBoot(existing)) {
+            const now = new Date().toISOString();
+            const updated = await pool.query(
+              'UPDATE admin_settings SET session_stop_enabled = $1, updated_at = $2 WHERE id = $3 RETURNING id, token_saver_enabled, session_stop_enabled, updated_at, updated_by',
+              [true, now, 'default']
+            );
+            return updated.rows[0] as AdminSettingsRecord;
+          }
+          return existing;
         }
         const now = new Date().toISOString();
         const insert = await pool.query(
           'INSERT INTO admin_settings (id, token_saver_enabled, session_stop_enabled, updated_at, updated_by) VALUES ($1,$2,$3,$4,$5) RETURNING id, token_saver_enabled, session_stop_enabled, updated_at, updated_by',
-          ['default', false, false, now, null]
+          ['default', false, true, now, null]
         );
         return insert.rows[0] as AdminSettingsRecord;
       },

@@ -33,6 +33,7 @@
 - SERVICE_ROLE (web|all; default: all)
 - WORKER_HTTP_ENABLED (default: false when running worker inside web)
 - SESSION_ID (default: public)
+- REQUIRE_ADMIN_START_ON_BOOT (default: true; pauses loop after cold start until admin starts)
 - ADMIN_TELEGRAM_IDS (comma-separated Telegram user IDs or usernames allowed for admin access)
   - Example: `ADMIN_TELEGRAM_IDS=rheuiii,123456`
 - OPENAI_RESEARCHER_MODEL (default: gpt-5.2-2025-12-11)
