@@ -62,6 +62,12 @@ Note: production-like E2E runs require a valid `PLAYWRIGHT_INIT_DATA` (see `docs
 - Deploy: `docs/runbooks/deploy.md`
 - Operations: `docs/runbooks/ops.md`
 
+## Live Links
+
+- Public channel: `https://t.me/noel_mirror`
+- Telegram Mini App: `http://t.me/noetic_mirror_bot/app`
+- Cloud Run web: `https://noetic-mirror-web-zlvmfsrm6a-ue.a.run.app/`
+
 ## Contributing
 
 See `CONTRIBUTING.md` for development workflow and testing guidelines.
